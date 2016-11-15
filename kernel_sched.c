@@ -213,12 +213,15 @@ CCB cctx[MAX_CORES];
 
 
 /*
-  The scheduler queue is implemented as a doubly linked list. The
-  head and tail of this list are stored in  SCHED.
+  The scheduler queue is implemented as a table containing 3 doubly linked lists.
+  SCHED_TABLE[0] corresponds to list of highest priority
+  SCHED_TABLE[1] corresponds to list of middle priority
+  SCHED_TABLE[2] corresponds to list of lowest priority
+
+  For a first test i will keep vsams implementation and just replace original SCHED with SCHED_TABLE[0]
 */
 
-
-rlnode SCHED;                         /* The scheduler queue */
+rlnode SCHED_TABLE[3];
 Mutex sched_spinlock = MUTEX_INIT;    /* spinlock for scheduler queue */
 
 
@@ -243,7 +246,7 @@ void sched_queue_add(TCB* tcb)
 {
   /* Insert at the end of the scheduling list */
   Mutex_Lock(& sched_spinlock);
-  rlist_push_back(& SCHED, & tcb->sched_node);
+  rlist_push_back(& SCHED_TABLE[0], & tcb->sched_node);
   Mutex_Unlock(& sched_spinlock);
 
   /* Restart possibly halted cores */
@@ -258,7 +261,7 @@ void sched_queue_add(TCB* tcb)
 TCB* sched_queue_select()
 {
   Mutex_Lock(& sched_spinlock);
-  rlnode * sel = rlist_pop_front(& SCHED);
+  rlnode * sel = rlist_pop_front(& SCHED_TABLE[0]);
   Mutex_Unlock(& sched_spinlock);
 
   return sel->tcb;  /* When the list is empty, this is NULL */
@@ -461,7 +464,9 @@ static void idle_thread()
  */
 void initialize_scheduler()
 {
-  rlnode_init(&SCHED, NULL);
+  rlnode_init(&SCHED_TABLE[0], NULL);
+  rlnode_init(&SCHED_TABLE[1], NULL);
+  rlnode_init(&SCHED_TABLE[2], NULL);
 }
 
 
