@@ -240,13 +240,15 @@ void ici_handler()
 
 
 /*
-  Add PCB to the end of the scheduler list.
+  Add PCB to the end of the  apropriate scheduler list.
 */
-void sched_queue_add(TCB* tcb)
+void sched_queue_add(TCB* tcb, int priority)
 {
-  /* Insert at the end of the scheduling list */
+  /* Insert at the end of the scheduling list of SCHED_TABLE[priority] */
   Mutex_Lock(& sched_spinlock);
-  rlist_push_back(& SCHED_TABLE[0], & tcb->sched_node);
+  if(priority == 0 ) rlist_push_back(& SCHED_TABLE[0], & tcb->sched_node);
+  else if (priority == 1) rlist_push_back(& SCHED_TABLE[1], & tcb->sched_node);
+  else rlist_push_back(& SCHED_TABLE[2], & tcb->sched_node);
   Mutex_Unlock(& sched_spinlock);
 
   /* Restart possibly halted cores */
@@ -284,7 +286,7 @@ void wakeup(TCB* tcb)
 
   /* Possibly add to the scheduler queue */
   if(tcb->phase == CTX_CLEAN) 
-    sched_queue_add(tcb);
+    sched_queue_add(tcb,0); //add to scheduler queue of highest priority
 
   Mutex_Unlock(& tcb->state_spinlock);
 
@@ -418,7 +420,7 @@ void gain(int preempt)
     switch(prev->state) 
     {
       case READY:
-        if(prev->type != IDLE_THREAD) sched_queue_add(prev);
+        if(prev->type != IDLE_THREAD) sched_queue_add(prev,0); //add to scheduler queue of highest priority
         break;
       case EXITED:
         prev_exit = 1; /* We cannot release here, because of the mutex */
