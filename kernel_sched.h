@@ -62,6 +62,13 @@ typedef enum {
   NORMAL_THREAD   /**< Marks a normal thread */
 } Thread_type;
 
+/** @brief Thread priority */
+typedef enum {
+	HIGH,
+	MEDIUM,
+	LOW
+} Thread_priority;
+
 /**
   @brief The thread control block
 
@@ -81,6 +88,7 @@ typedef struct thread_control_block
   Thread_type type;       /**< The type of thread */
   Thread_state state;    /**< The state of the thread */
   Thread_phase phase;    /**< The phase of the thread */
+  Thread_priority priority;    /**< The priority of the thread */
 
   void (*thread_func)();   /**< The function executed by this thread */
 

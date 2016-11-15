@@ -136,6 +136,7 @@ static void thread_start()
 
 /*
   Initialize and return a new TCB
+  TCB are assigned to HIGH priority when they are created
 */
 
 TCB* spawn_thread(PCB* pcb, void (*func)())
@@ -150,6 +151,7 @@ TCB* spawn_thread(PCB* pcb, void (*func)())
   tcb->type = NORMAL_THREAD;
   tcb->state = INIT;
   tcb->phase = CTX_CLEAN;
+  tcb->priority = HIGH;
   tcb->state_spinlock = MUTEX_INIT;
   tcb->thread_func = func;
   rlnode_init(& tcb->sched_node, tcb);  /* Intrusive list node */
@@ -242,12 +244,12 @@ void ici_handler()
 /*
   Add PCB to the end of the  apropriate scheduler list.
 */
-void sched_queue_add(TCB* tcb, int priority)
+void sched_queue_add(TCB* tcb)
 {
   /* Insert at the end of the scheduling list of SCHED_TABLE[priority] */
   Mutex_Lock(& sched_spinlock);
-  if(priority == 0 ) rlist_push_back(& SCHED_TABLE[0], & tcb->sched_node);
-  else if (priority == 1) rlist_push_back(& SCHED_TABLE[1], & tcb->sched_node);
+  if(tcb->priority == HIGH ) rlist_push_back(& SCHED_TABLE[0], & tcb->sched_node);
+  else if (tcb->priority == MEDIUM) rlist_push_back(& SCHED_TABLE[1], & tcb->sched_node);
   else rlist_push_back(& SCHED_TABLE[2], & tcb->sched_node);
   Mutex_Unlock(& sched_spinlock);
 
@@ -257,16 +259,38 @@ void sched_queue_add(TCB* tcb, int priority)
 
 
 /*
-  Remove the head of the scheduler list, if any, and
-  return it. Return NULL if the list is empty.
+  If there is anything on HIGH priority queue i.e. SCHED_TABLE[0] returns first element of that list
+  If HIGH priority queue is empty returns first element of MEDIUM priority list i.e. SCHED_TABLE[1] 
+  If both of the above lists are empty returns first element of LOW priority list 
 */
 TCB* sched_queue_select()
 {
-  Mutex_Lock(& sched_spinlock);
-  rlnode * sel = rlist_pop_front(& SCHED_TABLE[0]);
-  Mutex_Unlock(& sched_spinlock);
+  if (rlist_len(& SCHED_TABLE[0]) != 0){
+    Mutex_Lock(& sched_spinlock);
+    rlnode * sel = rlist_pop_front(& SCHED_TABLE[0]);
+    Mutex_Unlock(& sched_spinlock);
+    return sel->tcb; 
+  }
+  else if (rlist_len(& SCHED_TABLE[1]) != 0){
+    Mutex_Lock(& sched_spinlock);
+    rlnode * sel = rlist_pop_front(& SCHED_TABLE[1]);
+    Mutex_Unlock(& sched_spinlock);
+    return sel->tcb; 
+  }
+  else if (rlist_len(& SCHED_TABLE[2]) != 0) {
+    Mutex_Lock(& sched_spinlock);
+    rlnode * sel = rlist_pop_front(& SCHED_TABLE[2]);
+    Mutex_Unlock(& sched_spinlock);
+    return sel->tcb; 
+  }
+  else{
+    Mutex_Lock(& sched_spinlock);
+    rlnode * sel = rlist_pop_front(& SCHED_TABLE[0]);
+    Mutex_Unlock(& sched_spinlock);
+    return sel->tcb; 
+  }
 
-  return sel->tcb;  /* When the list is empty, this is NULL */
+  //return sel->tcb;  /* When the list is empty, this is NULL */
 } 
 
 
@@ -286,7 +310,7 @@ void wakeup(TCB* tcb)
 
   /* Possibly add to the scheduler queue */
   if(tcb->phase == CTX_CLEAN) 
-    sched_queue_add(tcb,0); //add to scheduler queue of highest priority
+    sched_queue_add(tcb); //add to scheduler queue of highest priority
 
   Mutex_Unlock(& tcb->state_spinlock);
 
@@ -347,6 +371,19 @@ void yield()
   {
     case RUNNING:
       current->state = READY;
+      //used all quantum time so priority has to go down a level
+      if (current->priority == HIGH){
+        current->priority = MEDIUM;
+        assert(current->priority == MEDIUM);
+      } 
+      else if (current->priority == MEDIUM){
+        current->priority = LOW;
+        assert(current->priority = LOW);
+      } 
+      else {
+        current->priority = LOW;
+        assert(current->priority = LOW);
+      } 
     case READY: /* We were awakened before we managed to sleep! */
       current_ready = 1;
       break;
@@ -420,7 +457,7 @@ void gain(int preempt)
     switch(prev->state) 
     {
       case READY:
-        if(prev->type != IDLE_THREAD) sched_queue_add(prev,0); //add to scheduler queue of highest priority
+        if(prev->type != IDLE_THREAD) sched_queue_add(prev); 
         break;
       case EXITED:
         prev_exit = 1; /* We cannot release here, because of the mutex */
@@ -466,9 +503,9 @@ static void idle_thread()
  */
 void initialize_scheduler()
 {
-  rlnode_init(&SCHED_TABLE[0], NULL);
-  rlnode_init(&SCHED_TABLE[1], NULL);
-  rlnode_init(&SCHED_TABLE[2], NULL);
+  rlnode_init(&SCHED_TABLE[0], NULL); //HIGH
+  rlnode_init(&SCHED_TABLE[1], NULL); //MEDIUM
+  rlnode_init(&SCHED_TABLE[2], NULL); //LOW
 }
 
 
