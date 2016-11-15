@@ -1,0 +1,8 @@
+This is a testing txt file to see if the commit to branch schedulerImplementation works fine
+
+If all works fine this txt file should appear on schedulerImplementation branch but not on other branches
+
+hope i don't screw everything up 
+wish me luck 
+
+-apostolidoum 
