@@ -67,6 +67,8 @@ volatile unsigned int boost_timer = 0;
 //#define MMAPPED_THREAD_MEM 
 #ifdef MMAPPED_THREAD_MEM 
 
+
+
 /*
   Use mmap to allocate a thread. A more detailed implementation can allocate a
   "sentinel page", and change access to PROT_NONE, so that a stack overflow
@@ -237,7 +239,7 @@ Mutex sched_spinlock = MUTEX_INIT;    /* spinlock for scheduler queue */
 /* Interrupt handler for ALARM */
 void yield_handler()
 {
-  yield();
+  yield(ALARMED);
 }
 
 /* Interrupt handle for inter-core interrupts */
@@ -378,7 +380,7 @@ void sleep_releasing(Thread_state state, Mutex* mx)
   Mutex_Unlock(& tcb->state_spinlock);
   
   /* call this to schedule someone else */
-  yield();
+  yield(MUTEX);
 
   /* Restore preemption state */
   if(preempt) preempt_on;
@@ -387,7 +389,7 @@ void sleep_releasing(Thread_state state, Mutex* mx)
 
 /* This function is the entry point to the scheduler's context switching */
 
-void yield()
+void yield(Thread_yield_purpose yield_purpose)
 { 
   /* Reset the timer, so that we are not interrupted by ALARM */
   bios_cancel_timer();
@@ -404,18 +406,22 @@ void yield()
   {
     case RUNNING:
       current->state = READY;
-      //used all quantum time so priority has to go down a level
-      if (current->priority == HIGH){
-        current->priority = MEDIUM;
-        assert(current->priority == MEDIUM);
+      
+      if (yield_purpose  == ALARMED){ //used all quantum time so priority has to go down a level
+        if (current->priority < 2){
+          current->priority += 1 ; 
+          assert(current->priority <=2);
+        }
       } 
-      else if (current->priority == MEDIUM){
-        current->priority = LOW;
-        assert(current->priority = LOW);
+      else if (yield_purpose == IO){ //interactive thread needs to have improved priority
+        if(current->priority >0) {
+          current->priority -= 1;
+          assert(current->priority >=0);
+        }
       } 
-      else {
-        current->priority = LOW;
-        assert(current->priority = LOW);
+      else { //case of mutexes or idle, the priority stays the same
+        current->priority = current->priority;
+        assert(current->priority >=0 && current->priority <= 2);
       } 
     case READY: /* We were awakened before we managed to sleep! */
       current_ready = 1;
@@ -517,12 +523,12 @@ void gain(int preempt)
 static void idle_thread()
 {
   /* When we first start the idle thread */
-  yield();
+  yield(IDLE);
 
   /* We come here whenever we cannot find a ready thread for our core */
   while(active_threads>0) {
     cpu_core_halt();
-    yield();
+    yield(IDLE);
   }
 
   /* If the idle thread exits here, we are leaving the scheduler! */

@@ -64,10 +64,24 @@ typedef enum {
 
 /** @brief Thread priority */
 typedef enum {
-	HIGH,
-	MEDIUM,
-	LOW
+	HIGH = 0,
+	MEDIUM = 1,
+	LOW = 2
 } Thread_priority;
+
+/** @brief Thread_yield_purpose 
+  describes why did the thread call yield
+  is a parameter of yield 
+  if thread calls yield to I/O its priority in improved
+  if thread calls yield because it exhausted quantum time its priority is lowered  etc
+  */
+typedef enum {
+  ALARMED, //priority is lowered 
+  IO, //priority is improved 
+  MUTEX, //priority stays the same (priority inversion will be solved with boost when the time is right)
+  IDLE //idle thread yields immediately after called 
+} Thread_yield_purpose;
+
 
 /**
   @brief The thread control block
@@ -202,8 +216,9 @@ void sleep_releasing(Thread_state newstate, Mutex* mx);
   This call asks the scheduler to terminate the quantum of the current thread
   and possibly switch to a different thread. The scheduler may decide that 
   it will renew the quantum for the current thread.
+  According to why it was called the priority of the thread calling it will change
  */
-void yield(void);
+void yield(Thread_yield_purpose yield_purpose);
 
 /**
   @brief Enter the scheduler.
