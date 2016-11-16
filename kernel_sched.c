@@ -47,6 +47,14 @@
 volatile unsigned int active_threads = 0;
 Mutex active_threads_spinlock = MUTEX_INIT;
 
+/*
+  in order to avoid starvation
+  every BOOST_TIME times we run the scheduler i.e. sched_queue_select
+  we reassign all priorities to HIGH
+  */
+volatile unsigned int boost_timer = 0;
+#define BOOST_TIME 50
+
 
 /* This is specific to Intel Pentium! */
 #define SYSTEM_PAGE_SIZE  (1<<12)
@@ -220,7 +228,6 @@ CCB cctx[MAX_CORES];
   SCHED_TABLE[1] corresponds to list of middle priority
   SCHED_TABLE[2] corresponds to list of lowest priority
 
-  For a first test i will keep vsams implementation and just replace original SCHED with SCHED_TABLE[0]
 */
 
 rlnode SCHED_TABLE[3];
@@ -265,27 +272,53 @@ void sched_queue_add(TCB* tcb)
 */
 TCB* sched_queue_select()
 {
+  //check if its time to boost priorities
+  if(boost_timer == BOOST_TIME){
+    boost_timer = 0; //start counting from start
+    //change priorities of all threads to HIGH
+    //traverse list and change priorities
+    Mutex_Lock(& sched_spinlock);
+    for(int i = 0; i < 3 ; i++){
+      assert(i<3);
+      rlnode * head = & SCHED_TABLE[i];
+      if(head->tcb != NULL) 
+        head->tcb->priority = HIGH;
+      while(head->next != & SCHED_TABLE[i]){
+        if(head->next->tcb != NULL)
+          head->next->tcb->priority = HIGH;
+        head = head->next;
+      }
+    }
+    Mutex_Unlock(& sched_spinlock);
+      
+  }
+
+  //select
   if (rlist_len(& SCHED_TABLE[0]) != 0){
     Mutex_Lock(& sched_spinlock);
     rlnode * sel = rlist_pop_front(& SCHED_TABLE[0]);
+    boost_timer += 1;
     Mutex_Unlock(& sched_spinlock);
     return sel->tcb; 
   }
   else if (rlist_len(& SCHED_TABLE[1]) != 0){
     Mutex_Lock(& sched_spinlock);
     rlnode * sel = rlist_pop_front(& SCHED_TABLE[1]);
+    boost_timer += 1;
     Mutex_Unlock(& sched_spinlock);
     return sel->tcb; 
   }
   else if (rlist_len(& SCHED_TABLE[2]) != 0) {
     Mutex_Lock(& sched_spinlock);
     rlnode * sel = rlist_pop_front(& SCHED_TABLE[2]);
+    boost_timer += 1;
     Mutex_Unlock(& sched_spinlock);
     return sel->tcb; 
   }
   else{
     Mutex_Lock(& sched_spinlock);
     rlnode * sel = rlist_pop_front(& SCHED_TABLE[0]);
+    boost_timer += 1;
     Mutex_Unlock(& sched_spinlock);
     return sel->tcb; 
   }
