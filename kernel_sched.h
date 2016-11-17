@@ -71,7 +71,7 @@ typedef enum {
 typedef struct thread_control_block
 {
   PCB* owner_pcb;       /**< This is null for a free TCB */
-  PTCB* owner_ptcb;     
+  PTCB* owner_ptcb;     /**< This is null for a free TCB */
 
   ucontext_t context;     /**< The thread context */
 
@@ -108,11 +108,11 @@ each node of this list points to a specific thread of the process
 typedef struct process_thread_control_block  
 {
   TCB* thread; /**< The thread */
-  PCB* owner_pcb; 
   Task task; /**< The task the tread is running */
   int argl;               /**< The thread's argument length */
   void* args;             /**< The thread's argument string */
-  CondVar waitsetcv;      /**< cv containing a list of threads waiting for me*/
+  Thread_state state; //state of thread it pointing at (if the thread has exited ptcb can be  released)
+  //CondVar waitsetcv;      /**< cv containing a list of threads waiting for me*/
 
 
 }PTCB;

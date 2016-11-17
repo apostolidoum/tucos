@@ -90,22 +90,7 @@ PCB* acquire_PCB()
   return pcb;
 }
 
-PTCB* acquire_PTCB(PCB* pcb)
-{
-	PTCB* ptcb = NULL;
-	if(pcb->ptcb_list != NULL) {
-		 
-	    ptcb = rlist_pop_front( pcb->ptcb_list);
-	    rlist_push_front(pcb->ptcb_list, & ptcb);
-	    //pcb->pstate = ALIVE; //state of thread !!! FIX THAT
-	    //assert(pcb->ptcb_list->parent);
-	    //pcb->ptcb_list = pcb->ptcb_list->parent; //???
-	   
-  }
 
-  return ptcb;
-
-}
 
 /*
   Must be called with kernel_mutex held
@@ -169,6 +154,10 @@ Pid_t Exec(Task call, int argl, void* args)
 
   /* The new process PCB */
   newproc = acquire_PCB();
+  //PTCB * newptcb;
+  //newptcb = allocate ptcb ();
+  //push ptcb to list of newproc 
+
   rlist_push_front(& newproc->ptcb_list,& acquire_PTCB()); //create ptcb and push it to the list of the pcb
   
 
@@ -220,6 +209,8 @@ Pid_t Exec(Task call, int argl, void* args)
     rlist_push_front(&newproc->ptcb_list,& temp);
     temp->ptcb->task = spawn_thread(newproc, start_thread);
     wakeup(temp->ptcb->thread);
+
+  //newptcb->thread = spawn_thread(newproc, start_thread);
   }
 
 
@@ -333,6 +324,8 @@ void Exit(int exitval)
   if(GetPid()==1) {
     while(WaitChild(NOPROC,NULL)!=NOPROC);
   }
+
+  /* we must also check that pcb list of ptcbs is empty*/
 
   /* Now, we exit */
   Mutex_Lock(& kernel_mutex);
