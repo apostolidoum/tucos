@@ -71,6 +71,7 @@ typedef enum {
 typedef struct thread_control_block
 {
   PCB* owner_pcb;       /**< This is null for a free TCB */
+  PTCB* owner_ptcb;
 
   ucontext_t context;     /**< The thread context */
 
@@ -95,7 +96,27 @@ typedef struct thread_control_block
   
 } TCB;
 
+/**
+  @brief The process thread control block
 
+  this oblects is an indermediate data stucture that connects the process to one 
+  of possibly many tcbs
+
+  PCB contains a list of PTCBs
+  each PTCB points to a TCB
+*/
+
+typedef struct process_thread_control_block
+{
+  PCB* owner_pcb; /**<pointer to the pcb for wich ptcb(and the according thread) was created*/
+  TCB* thread; /**<pointer to the thread */
+  Task task;  /**<task that the thread will execute. for the first thread created this will be provided from PCB */
+  int argl;               /**< The main thread's argument length */
+  void* args;             /**< The main thread's argument string */
+  //CondVar cv with threads waiting for me 
+  Thread_state state; /**< the state of the thread i am pointing to. If the thread has EXITED ptcb ptcb can be released */
+
+} PTCB;
 
 /** Thread stack size */
 #define THREAD_STACK_SIZE  (128*1024)

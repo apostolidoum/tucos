@@ -56,6 +56,8 @@ Mutex active_threads_spinlock = MUTEX_INIT;
 
 #define THREAD_SIZE  (THREAD_TCB_SIZE+THREAD_STACK_SIZE)
 
+#define PTCB_SIZE  (sizeof(PTCB)) //??? should it also be a multiple of SYSTEM_PAGE_SIZE??
+
 //#define MMAPPED_THREAD_MEM 
 #ifdef MMAPPED_THREAD_MEM 
 
@@ -98,7 +100,20 @@ void* allocate_thread(size_t size)
 }
 #endif
 
+/*
+  Allocate memory for a PTCB using xmalloc
+*/
+void* allocate_ptcb()
+{ 
+  void* ptr = (PTCB*)xmalloc(PTCB_SIZE);
+  CHECK((ptr==NULL)?-1:0);
+  return ptr;
+}
 
+void free_ptcb(void* ptr)
+{
+  free(ptr);
+}
 /*
   Initialize the thread context. This is done in a platform-specific
   way, using the ucontext library.
@@ -146,13 +161,22 @@ TCB* spawn_thread(PCB* pcb, void (*func)())
   /* Set the owner */
   tcb->owner_pcb = pcb;
 
+
+  PTCB* ptcb = (PTCB*) allocate_ptcb();
+  ptcb->thread = tcb;
+  tcb->owner_ptcb = ptcb;
+
   /* Initialize the other attributes */
   tcb->type = NORMAL_THREAD;
   tcb->state = INIT;
   tcb->phase = CTX_CLEAN;
   tcb->state_spinlock = MUTEX_INIT;
-  tcb->thread_func = func;
+  tcb->thread_func = func; ///----was this here from vsam? is it needed?
   rlnode_init(& tcb->sched_node, tcb);  /* Intrusive list node */
+
+  /* Initialize PTCB attributes */
+  ptcb->task = func; //?? argl args
+  ptcb->state = tcb->state;
 
 
   /* Prepare the stack */
@@ -170,9 +194,10 @@ TCB* spawn_thread(PCB* pcb, void (*func)())
     VALGRIND_STACK_REGISTER(stack.ss_sp, stack.ss_sp+THREAD_STACK_SIZE);
 #endif
 
-  /* increase the count of active threads */
+  /* increase the count of active threads and push PTCB to list */
   Mutex_Lock(&active_threads_spinlock);
   active_threads++;
+  rlist_push_back(& tcb->owner_pcb->ptcb_list, & ptcb);
   Mutex_Unlock(&active_threads_spinlock);
  
   return tcb;
@@ -188,14 +213,33 @@ void release_TCB(TCB* tcb)
   VALGRIND_STACK_DEREGISTER(tcb->valgrind_stack_id);    
 #endif
 
+  tcb->owner_ptcb->state = EXITED;
+  release_PTCB(tcb->owner_ptcb);
+  
   free_thread(tcb, THREAD_SIZE);
 
+  /* reduce number of active threads  */
   Mutex_Lock(&active_threads_spinlock);
   active_threads--;
   Mutex_Unlock(&active_threads_spinlock);
 }
 
+void release_PTCB(PTCB* ptcb)
+{
 
+  if(ptcb->state == EXITED){
+
+    /* remove ptcb from list */
+  Mutex_Lock(&active_threads_spinlock);
+  rlist_remove(ptcb);  
+  Mutex_Unlock(&active_threads_spinlock);
+  }
+  
+  free_ptcb(ptcb);
+
+}
+
+//
 /*
  *
  * Scheduler

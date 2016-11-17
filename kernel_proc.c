@@ -179,8 +179,8 @@ Pid_t Exec(Task call, int argl, void* args)
     we do, because once we wakeup the new thread it may run! so we need to have finished
     the initialization of the PCB.
    */
-  if(call != NULL) {
-    newproc->main_thread = spawn_thread(newproc, start_main_thread);
+  if(call != NULL) { //call is a task
+    newproc->main_thread = spawn_thread(newproc, start_main_thread); //we need something like newproc->ptcb_list[0]->tcb
     wakeup(newproc->main_thread);
   }
 
@@ -301,6 +301,10 @@ void Exit(int exitval)
 
   PCB *curproc = CURPROC;  /* cache for efficiency */
 
+  /* we must also check that the ptcb list is empty 
+  i.e. all threads of the process are done executing*/
+  if(rlist_len(curproc->ptcb_list)==0){
+
   /* Do all the other cleanup we want here, close files etc. */
   if(curproc->args) {
     free(curproc->args);
@@ -346,6 +350,7 @@ void Exit(int exitval)
 
   /* Bye-bye cruel world */
   sleep_releasing(EXITED, & kernel_mutex);
+}
 }
 
 
