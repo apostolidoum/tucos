@@ -90,6 +90,23 @@ PCB* acquire_PCB()
   return pcb;
 }
 
+PTCB* acquire_PTCB(PCB* pcb)
+{
+	PTCB* ptcb = NULL;
+	if(pcb->ptcb_list != NULL) {
+		 
+	    ptcb = rlist_pop_front( pcb->ptcb_list);
+	    rlist_push_front(pcb->ptcb_list, & ptcb);
+	    //pcb->pstate = ALIVE; //state of thread !!! FIX THAT
+	    //assert(pcb->ptcb_list->parent);
+	    //pcb->ptcb_list = pcb->ptcb_list->parent; //???
+	   
+  }
+
+  return ptcb;
+
+}
+
 /*
   Must be called with kernel_mutex held
 */
@@ -124,6 +141,22 @@ void start_main_thread()
   Exit(exitval);
 }
 
+/*
+	This function is provided as an argument to spawn,
+	to execute a thread of a process.
+*/
+void start_thread()
+{
+  int exitval;
+
+  Task call =  CURPROC->task;
+  int argl = CURPROC->argl;
+  void* args = CURPROC->args;
+
+  exitval = call(argl,args);
+  Exit(exitval);
+}
+
 
 /*
 	System call to create a new process.
@@ -136,6 +169,8 @@ Pid_t Exec(Task call, int argl, void* args)
 
   /* The new process PCB */
   newproc = acquire_PCB();
+  rlist_push_front(& newproc->ptcb_list,& acquire_PTCB()); //create ptcb and push it to the list of the pcb
+  
 
   if(newproc == NULL) goto finish;  /* We have run out of PIDs! */
 
@@ -180,8 +215,11 @@ Pid_t Exec(Task call, int argl, void* args)
     the initialization of the PCB.
    */
   if(call != NULL) {
-    newproc->main_thread = spawn_thread(newproc, start_main_thread);
-    wakeup(newproc->main_thread);
+    
+    rlnode* temp = rlist_pop_front(&newproc->ptcb_list); //is ptcb
+    rlist_push_front(&newproc->ptcb_list,& temp);
+    temp->ptcb->task = spawn_thread(newproc, start_thread);
+    wakeup(temp->ptcb->thread);
   }
 
 
@@ -338,7 +376,9 @@ void Exit(int exitval)
   }
 
   /* Disconnect my main_thread */
-  curproc->main_thread = NULL;
+  rlnode* temp = rlist_pop_front(& curproc->ptcb_list);
+  rlist_push_front(& curproc->ptcb_list,temp );
+  temp->ptcb->thread = NULL;
 
   /* Now, mark the process as exited. */
   curproc->pstate = ZOMBIE;

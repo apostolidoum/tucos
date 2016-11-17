@@ -71,6 +71,7 @@ typedef enum {
 typedef struct thread_control_block
 {
   PCB* owner_pcb;       /**< This is null for a free TCB */
+  PTCB* owner_ptcb;     
 
   ucontext_t context;     /**< The thread context */
 
@@ -95,7 +96,26 @@ typedef struct thread_control_block
   
 } TCB;
 
+/**
+@brief The process thread control block
 
+intermediate structure that connects the process to a thread
+pcb contains a list of ptcbs
+each node of this list points to a specific thread of the process
+
+*/
+
+typedef struct process_thread_control_block  
+{
+  TCB* thread; /**< The thread */
+  PCB* owner_pcb; 
+  Task task; /**< The task the tread is running */
+  int argl;               /**< The thread's argument length */
+  void* args;             /**< The thread's argument string */
+  CondVar waitsetcv;      /**< cv containing a list of threads waiting for me*/
+
+
+}PTCB;
 
 /** Thread stack size */
 #define THREAD_STACK_SIZE  (128*1024)
