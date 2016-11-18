@@ -39,6 +39,7 @@ static inline void initialize_PCB(PCB* pcb)
   for(int i=0;i<MAX_FILEID;i++)
     pcb->FIDT[i] = NULL;
 
+  rlnode_init(& pcb->ptcb_list,NULL);
   rlnode_init(& pcb->children_list, NULL);
   rlnode_init(& pcb->exited_list, NULL);
   rlnode_init(& pcb->children_node, pcb);
@@ -311,7 +312,7 @@ void Exit(int exitval)
 
   /* we must also check that the ptcb list is empty 
   i.e. all threads of the process are done executing*/
-  if(rlist_len(curproc->ptcb_list)==0){
+  if(rlist_len(& curproc->ptcb_list)==0){
 
   /* Do all the other cleanup we want here, close files etc. */
   if(curproc->args) {
@@ -352,7 +353,7 @@ void Exit(int exitval)
   /* Disconnect my main_thread */
   //curproc->main_thread = NULL;
   /* Disconnect ptcb list*/
-  curproc->ptcb_list = NULL;
+  //curproc->ptcb_list = NULL;
 
   /* Now, mark the process as exited. */
   curproc->pstate = ZOMBIE;

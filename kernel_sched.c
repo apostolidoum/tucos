@@ -197,7 +197,13 @@ TCB* spawn_thread(PCB* pcb, void (*func)())
   /* increase the count of active threads and push PTCB to list */
   Mutex_Lock(&active_threads_spinlock);
   active_threads++;
-  rlist_push_back(& tcb->owner_pcb->ptcb_list, & ptcb);
+    if(rlist_len(& tcb->owner_pcb->ptcb_list) == 0){
+      rlnode_init(& tcb->owner_pcb->ptcb_list,ptcb);
+    }
+    else{
+      rlist_push_back(& tcb->owner_pcb->ptcb_list, ptcb);
+    }
+    
   Mutex_Unlock(&active_threads_spinlock);
  
   return tcb;
