@@ -180,8 +180,16 @@ Pid_t Exec(Task call, int argl, void* args)
     the initialization of the PCB.
    */
   if(call != NULL) { //call is a task
-    newproc->main_thread = spawn_thread(newproc, start_main_thread); //we need something like newproc->ptcb_list[0]->tcb
-    wakeup(newproc->main_thread);
+
+    //newproc->main_thread = spawn_thread(newproc, start_main_thread); //we need something like newproc->ptcb_list[0]->tcb
+    /*
+      spawn thread creates tcb, ptcb
+      connects ptcb -> tcb
+      puts ptcb to pcb's list
+      and returns the tcb!!! 
+      this thread is the one we have to wake up */
+    TCB* tcb_to_wake_up = spawn_thread(newproc, start_main_thread);
+    wakeup(tcb_to_wake_up);
   }
 
 
@@ -342,7 +350,9 @@ void Exit(int exitval)
   }
 
   /* Disconnect my main_thread */
-  curproc->main_thread = NULL;
+  //curproc->main_thread = NULL;
+  /* Disconnect ptcb list*/
+  curproc->ptcb_list = NULL;
 
   /* Now, mark the process as exited. */
   curproc->pstate = ZOMBIE;

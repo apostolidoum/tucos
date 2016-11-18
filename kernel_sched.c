@@ -171,11 +171,11 @@ TCB* spawn_thread(PCB* pcb, void (*func)())
   tcb->state = INIT;
   tcb->phase = CTX_CLEAN;
   tcb->state_spinlock = MUTEX_INIT;
-  tcb->thread_func = func; ///----was this here from vsam? is it needed?
+  //tcb->thread_func = main_task; ///----PTCB 
   rlnode_init(& tcb->sched_node, tcb);  /* Intrusive list node */
 
   /* Initialize PTCB attributes */
-  ptcb->task = func; //?? argl args
+  ptcb->task = pcb->main_task; //?? argl args
   ptcb->state = tcb->state;
 
 
