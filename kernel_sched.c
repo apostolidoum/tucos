@@ -171,7 +171,7 @@ TCB* spawn_thread(PCB* pcb, void (*func)())
   tcb->state = INIT;
   tcb->phase = CTX_CLEAN;
   tcb->state_spinlock = MUTEX_INIT;
-  //tcb->thread_func = main_task; ///----PTCB 
+  tcb->thread_func = func; ///----PTCB 
   rlnode_init(& tcb->sched_node, tcb);  /* Intrusive list node */
 
   /* Initialize PTCB attributes */
@@ -220,7 +220,7 @@ void release_TCB(TCB* tcb)
 #endif
 
   tcb->owner_ptcb->state = EXITED;
-  release_PTCB(tcb->owner_ptcb);
+  release_PTCB(tcb->owner_ptcb,tcb);
   
   free_thread(tcb, THREAD_SIZE);
 
@@ -230,14 +230,15 @@ void release_TCB(TCB* tcb)
   Mutex_Unlock(&active_threads_spinlock);
 }
 
-void release_PTCB(PTCB* ptcb)
+void release_PTCB(PTCB* ptcb,TCB* tcb)
 {
 
   if(ptcb->state == EXITED){
 
     /* remove ptcb from list */
   Mutex_Lock(&active_threads_spinlock);
-  rlist_remove(ptcb);  
+  if(rlist_len(& tcb->owner_pcb->ptcb_list)!=0)
+    rlist_remove(ptcb);  
   Mutex_Unlock(&active_threads_spinlock);
   }
   
