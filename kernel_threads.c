@@ -1,19 +1,20 @@
-
+#include <assert.h>
 #include "tinyos.h"
 #include "kernel_sched.h"
 #include "kernel_proc.h"
+#include "kernel_threads.h"
 
 /** 
   @brief Create a new thread in the current process.
   */
 Tid_t CreateThread(Task task, int argl, void* args)
 {
-  Mutex_lock(&kernel_mutex);
+  Mutex_Lock(&kernel_mutex);
   //symposiumofThreads argl -> number of philosopher
   TCB* temp = spawn_thread(CURPROC,task,argl);
   if(temp!=NULL){
     wakeup(temp);
-    Mutex_Unlock(&kernel_mutex);
+    Mutex_Unlock(& kernel_mutex);
    return temp;
   }
   else {

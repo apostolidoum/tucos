@@ -227,7 +227,7 @@ static void cleanup_zombie(PCB* pcb, int* status)
 
 static Pid_t wait_for_specific_child(Pid_t cpid, int* status)
 {
-  Mutex_Lock(& kernel_mutex);
+  Mutex_Lock(&kernel_mutex);
 
   /* Legality checks */
   if((cpid<0) || (cpid>=MAX_PROC)) {
@@ -245,12 +245,12 @@ static Pid_t wait_for_specific_child(Pid_t cpid, int* status)
 
   /* Ok, child is a legal child of mine. Wait for it to exit. */
   while(child->pstate == ALIVE)
-    Cond_Wait(& kernel_mutex, & parent->child_exit);
+    Cond_Wait(&kernel_mutex, & parent->child_exit);
   
   cleanup_zombie(child, status);
   
 finish:
-  Mutex_Unlock(& kernel_mutex);
+  Mutex_Unlock(&kernel_mutex);
   return cpid;
 }
 

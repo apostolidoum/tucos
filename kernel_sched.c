@@ -226,7 +226,7 @@ void release_TCB(TCB* tcb)
   release_PTCB(tcb->owner_ptcb,tcb);
   
   //broadcast to all those who wait for me that I'm gone
-  Cond_Broadcast(tcb->thread_child_exit);
+  Cond_Broadcast(& tcb->thread_child_exit);
   free_thread(tcb, THREAD_SIZE);
 
   /* reduce number of active threads  */
