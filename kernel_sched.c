@@ -153,7 +153,7 @@ static void thread_start()
   Initialize and return a new TCB
 */
 
-TCB* spawn_thread(PCB* pcb, void (*func)())
+TCB* spawn_thread(PCB* pcb, void (*func)(),Tid_t thread_id)
 {
   /* The allocated thread size must be a multiple of page size */
   TCB* tcb = (TCB*) allocate_thread(THREAD_SIZE);
@@ -172,11 +172,14 @@ TCB* spawn_thread(PCB* pcb, void (*func)())
   tcb->phase = CTX_CLEAN;
   tcb->state_spinlock = MUTEX_INIT;
   tcb->thread_func = func; ///----PTCB 
+  tcb->thread_child_exit = COND_INIT; //initialize cv of threads that are waiting for me
+  tcb->tid = thread_id;
   rlnode_init(& tcb->sched_node, tcb);  /* Intrusive list node */
 
   /* Initialize PTCB attributes */
   ptcb->task = pcb->main_task; //?? argl args
   ptcb->state = tcb->state;
+  ptcb->tid = tcb->tid;
 
 
   /* Prepare the stack */
@@ -222,6 +225,8 @@ void release_TCB(TCB* tcb)
   tcb->owner_ptcb->state = EXITED;
   release_PTCB(tcb->owner_ptcb,tcb);
   
+  //broadcast to all those who wait for me that I'm gone
+  Cond_Broadcast(tcb->thread_child_exit);
   free_thread(tcb, THREAD_SIZE);
 
   /* reduce number of active threads  */
@@ -245,6 +250,52 @@ void release_PTCB(PTCB* ptcb,TCB* tcb)
   free_ptcb(ptcb);
 
 }
+/***
+  *
+  * Functions for SysCall JoinThread
+  */
+static Tid_t wait_thread(Tid_t ctid, int* status) //????status???
+{
+  Mutex_Lock(& kernel_mutex);
+
+  /* "thread_parent" is the one who waits
+    waits for "thread_child" */
+
+  
+  TCB* thread_parent = CURTHREAD;
+  PTCB* thread_child_ptcb = rlist_find(& CURTHREAD->owner_pcb->ptcb_list,ctid,NULL);//search list for key ctid; return NOTHREAD in case of fail
+  
+  if( thread_child_ptcb->thread == NULL) //thread_child_ptcb->thread is TCB
+  {
+    ctid = NOTHREAD;
+    goto finish;
+  }
+
+  /* Ok, thread_child is a legal thread_child. Wait for it to exit. */
+  while(thread_child_ptcb->thread->state != EXITED) //TCB->state
+    Cond_Wait(& kernel_mutex, & thread_parent->thread_child_exit); //do we actually need to lock this mutex?????
+  
+
+finish:
+  Mutex_Unlock(& kernel_mutex);
+  return ctid;
+}
+
+
+
+
+Tid_t Wait_Thread(Tid_t ctid, int* status) //status??????????????????????
+{
+  /* Wait for specific child. */
+  if(ctid != NOTHREAD)
+    return  wait_thread(ctid,status);
+  else
+    return -1;
+
+}
+
+
+
 
 //
 /*

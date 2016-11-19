@@ -189,7 +189,7 @@ Pid_t Exec(Task call, int argl, void* args)
       puts ptcb to pcb's list
       and returns the tcb!!! 
       this thread is the one we have to wake up */
-    TCB* tcb_to_wake_up = spawn_thread(newproc, start_main_thread);
+    TCB* tcb_to_wake_up = spawn_thread(newproc, start_main_thread,NULL);
     wakeup(tcb_to_wake_up);
   }
 

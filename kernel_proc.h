@@ -41,7 +41,8 @@ typedef struct process_control_block {
   PCB* parent;            /**< Parent's pcb. */
   int exitval;            /**< The exit value */
 
-  rlnode ptcb_list;		/**< The list of ptcbs*/
+  rlnode 
+  ptcb_list;		/**< The list of ptcbs*/
   Task main_task;         /**< The main thread's function */
   int argl;               /**< The main thread's argument length */
   void* args;             /**< The main thread's argument string */
@@ -89,6 +90,8 @@ PCB* get_pcb(Pid_t pid);
   @returns the PID of the process, or NOPROC.
 */
 Pid_t get_pid(PCB* pcb);
+
+void Exit(int exitval);
 
 /** @} */
 

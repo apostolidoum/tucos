@@ -88,6 +88,9 @@ typedef struct thread_control_block
   Mutex state_spinlock;       /**< A spinlock for setting state and phase */
 
 
+  CondVar thread_child_exit;     /**< Condition variable for @c WaitThreadChild */
+  Tid_t tid;    /**<thread id number */
+
   /* scheduler data */  
   rlnode sched_node;      /**< node to use when queueing in the scheduler list */
 
@@ -113,6 +116,7 @@ typedef struct process_thread_control_block
   Task task;  /**<task that the thread will execute. for the first thread created this will be provided from PCB */
   int argl;               /**< The main thread's argument length */
   void* args;             /**< The main thread's argument string */
+  Tid_t tid;    /**<thread id number */
   //CondVar cv with threads waiting for me 
   Thread_state state; /**< the state of the thread i am pointing to. If the thread has EXITED ptcb ptcb can be released */
 
@@ -174,7 +178,7 @@ extern CCB cctx[MAX_CORES];
   Note that, the new thread is returned in the @c INIT state.
   The caller must use @c wakeup() to start it.
 */
-TCB* spawn_thread(PCB* pcb, void (*func)());
+TCB* spawn_thread(PCB* pcb, void (*func)(),Tid_t thread_id);
 
 /**
   @brief Wakeup a blocked thread.

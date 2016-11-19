@@ -8,7 +8,19 @@
   */
 Tid_t CreateThread(Task task, int argl, void* args)
 {
-	return NOTHREAD;
+  Mutex_lock(&kernel_mutex);
+  //symposiumofThreads argl -> number of philosopher
+  TCB* temp = spawn_thread(CURPROC,task,argl);
+  if(temp!=NULL){
+    wakeup(temp);
+    Mutex_Unlock(&kernel_mutex);
+   return temp;
+  }
+  else {
+    Mutex_Unlock(&kernel_mutex);
+    return NOTHREAD;
+  } 
+
 }
 
 /**
@@ -24,7 +36,11 @@ Tid_t ThreadSelf()
   */
 int ThreadJoin(Tid_t tid, int* exitval)
 {
-	return -1;
+  if(tid == ThreadSelf())
+	 return -1;
+  else 
+   return Wait_Thread(tid,exitval);
+   //join 
 }
 
 /**
@@ -41,6 +57,7 @@ int ThreadDetach(Tid_t tid)
 void ThreadExit(int exitval)
 {
 
+  release_TCB(CURTHREAD);
 }
 
 
@@ -74,4 +91,6 @@ void ThreadClearInterrupt()
 {
 
 }
+
+
 
