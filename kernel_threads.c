@@ -11,11 +11,11 @@ Tid_t CreateThread(Task task, int argl, void* args)
 {
   Mutex_Lock(&kernel_mutex);
   //symposiumofThreads argl -> number of philosopher
-  TCB* temp = spawn_thread(CURPROC,task,argl);
+  TCB* temp = spawn_thread(CURPROC,start_thread,argl);
   if(temp!=NULL){
     wakeup(temp);
     Mutex_Unlock(& kernel_mutex);
-   return temp;
+   return temp->tid;
   }
   else {
     Mutex_Unlock(&kernel_mutex);

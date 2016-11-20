@@ -221,9 +221,9 @@ int SymposiumOfThreads(int argl, void* args)
 	}  
 
 	/* Wait for philosophers to exit */  
-	for(int i=0;i<N;i++) {
-		ThreadJoin(thread[i],NULL);
-	}
+	//for(int i=0;i<N;i++) {
+	//	ThreadJoin(thread[i],NULL);
+	//}
 
 	SymposiumTable_destroy(&S);
 

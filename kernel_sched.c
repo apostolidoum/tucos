@@ -56,7 +56,7 @@ Mutex active_threads_spinlock = MUTEX_INIT;
 
 #define THREAD_SIZE  (THREAD_TCB_SIZE+THREAD_STACK_SIZE)
 
-#define PTCB_SIZE  (sizeof(PTCB)) //??? should it also be a multiple of SYSTEM_PAGE_SIZE??
+#define PTCB_SIZE  (((sizeof(PTCB)+SYSTEM_PAGE_SIZE-1)/SYSTEM_PAGE_SIZE)*SYSTEM_PAGE_SIZE)
 
 //#define MMAPPED_THREAD_MEM 
 #ifdef MMAPPED_THREAD_MEM 
@@ -82,6 +82,24 @@ void* allocate_thread(size_t size)
 
   return ptr;
 }
+
+/*
+  Allocate memory for a PTCB 
+*/
+
+void free_ptcb(void* ptr,size_t size)
+{
+  CHECK(munmap(ptr, size));
+}
+void* allocate_ptcb(size_t size)
+{ 
+  void* ptr = nmap(NULL,size,
+      PROT_READ|PROT_WRITE|PROT_EXEC,  
+      MAP_ANONYMOUS  | MAP_PRIVATE 
+      , -1,0);
+  CHECK((ptr==MAP_FAILED)?-1:0);
+  return ptr;
+}
 #else
 /*
   Use malloc to allocate a thread. This is probably faster than  mmap, but cannot
@@ -98,22 +116,25 @@ void* allocate_thread(size_t size)
   CHECK((ptr==NULL)?-1:0);
   return ptr;
 }
-#endif
-
 /*
-  Allocate memory for a PTCB using xmalloc
+  Allocate memory for a PTCB 
 */
-void* allocate_ptcb()
-{ 
-  void* ptr = (PTCB*)xmalloc(PTCB_SIZE);
-  CHECK((ptr==NULL)?-1:0);
-  return ptr;
-}
 
-void free_ptcb(void* ptr)
+void free_ptcb(void* ptr, size_t size)
 {
   free(ptr);
 }
+void* allocate_ptcb(size_t size)
+{ 
+  void* ptr = aligned_alloc(SYSTEM_PAGE_SIZE, size);
+  CHECK((ptr==NULL)?-1:0);
+  return ptr;
+}
+#endif
+
+
+
+
 /*
   Initialize the thread context. This is done in a platform-specific
   way, using the ucontext library.
@@ -129,6 +150,22 @@ void initialize_context(ucontext_t* ctx, stack_t stack, void (*ctx_func)())
 
   pthread_sigmask(0, NULL, & ctx->uc_sigmask);  /* We don't want any signals changed */
   makecontext(ctx, (void*) ctx_func, 0);
+}
+
+/*
+  This function is provided as an argument to spawn,
+  to execute a thread of a process.
+*/
+void start_thread()
+{
+  int exitval;
+
+  Task call =  CURTHREAD->owner_ptcb->task;
+  int argl = CURTHREAD->owner_ptcb->argl;
+  void* args = CURTHREAD->owner_ptcb->args;
+
+  exitval = call(argl,args);
+  Exit(exitval);
 }
 
 
@@ -162,7 +199,7 @@ TCB* spawn_thread(PCB* pcb, void (*func)(),Tid_t thread_id)
   tcb->owner_pcb = pcb;
 
 
-  PTCB* ptcb = (PTCB*) allocate_ptcb();
+  PTCB* ptcb = (PTCB*) allocate_ptcb(PTCB_SIZE);
   ptcb->thread = tcb;
   tcb->owner_ptcb = ptcb;
 
@@ -180,7 +217,14 @@ TCB* spawn_thread(PCB* pcb, void (*func)(),Tid_t thread_id)
   ptcb->task = pcb->main_task; //?? argl args
   ptcb->state = tcb->state;
   ptcb->tid = tcb->tid;
-
+  ptcb->argl = pcb->argl;
+  //ptcb->args = pcb->args;
+  if(pcb->args!=NULL) {
+    ptcb->args = malloc(pcb->argl);
+    memcpy(ptcb->args, pcb->args, pcb->argl);
+  }
+  else
+    ptcb->args=NULL;
 
   /* Prepare the stack */
   stack_t stack = {
@@ -245,11 +289,12 @@ void release_PTCB(PTCB* ptcb,TCB* tcb)
   if(rlist_len(& tcb->owner_pcb->ptcb_list)!=0)
     rlist_remove(ptcb);  
   Mutex_Unlock(&active_threads_spinlock);
-  }
-  
-  free_ptcb(ptcb);
+
+  free_ptcb(ptcb, PTCB_SIZE);
+  } 
 
 }
+
 /***
   *
   * Functions for SysCall JoinThread

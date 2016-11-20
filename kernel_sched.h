@@ -169,6 +169,13 @@ extern CCB cctx[MAX_CORES];
 */
 #define CURPROC  (CURTHREAD->owner_pcb)
 
+  /*
+  This function is provided as an argument to spawn,
+  to execute a thread of a process.
+*/
+
+  void start_thread();
+
 
 /**
   @brief Create a new thread.
