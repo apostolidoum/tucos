@@ -164,7 +164,7 @@ void start_thread()
   int argl = CURTHREAD->owner_ptcb->argl;
   void* args = CURTHREAD->owner_ptcb->args;
 
-  exitval = call(argl,args);
+  exitval = call(argl,&args);
   Exit(exitval);
 }
 
