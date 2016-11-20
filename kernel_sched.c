@@ -380,7 +380,7 @@ void sleep_releasing(Thread_state state, Mutex* mx)
   Mutex_Unlock(& tcb->state_spinlock);
   
   /* call this to schedule someone else */
-  yield(MUTEX);
+  yield(IO);
 
   /* Restore preemption state */
   if(preempt) preempt_on;
