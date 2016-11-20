@@ -41,7 +41,7 @@ int boot_symposium(int argl, void* args)
   /* Open standard input */
 
   /* Just start task Symposium */
-  Exec(SymposiumOfThreads, argl,args);
+  Exec(SymposiumOfProcesses, argl,args);
 
   Close(0);
   Close(1);

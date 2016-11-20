@@ -8,6 +8,8 @@
 #include "bios.h"
 #include "tinyos.h"
 #include "symposium.h"
+#include "kernel_threads.h"
+
 
 #define QUIET 0  /* Use 1 for supperssing printing (for timing tests), 0 for normal printing */
 

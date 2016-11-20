@@ -164,7 +164,7 @@ void start_thread()
   int argl = CURTHREAD->owner_ptcb->argl;
   void* args = CURTHREAD->owner_ptcb->args;
 
-  exitval = call(argl,&args);
+  exitval = call(argl,args);
   Exit(exitval);
 }
 
@@ -310,7 +310,7 @@ static Tid_t wait_thread(Tid_t ctid, int* status) //????status???
   TCB* thread_parent = CURTHREAD;
   PTCB* thread_child_ptcb = rlist_find(& CURTHREAD->owner_pcb->ptcb_list,ctid,NULL);//search list for key ctid; return NOTHREAD in case of fail
   
-  if( thread_child_ptcb->thread == NULL) //thread_child_ptcb->thread is TCB
+  if(thread_child_ptcb == NULL ||thread_child_ptcb->thread == NULL) //thread_child_ptcb->thread is TCB
   {
     ctid = NOTHREAD;
     goto finish;
