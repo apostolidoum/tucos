@@ -5,7 +5,7 @@
 #include "kernel_sched.h"
 #include "kernel_streams.h"
 #include "kernel_proc.h"
-
+//#include "kernel_pipe.c"
 /*************************************
 
   Devices and device drivers
@@ -209,6 +209,11 @@ void initialize_devices()
   devtable[DEV_SERIAL].type = DEV_SERIAL;
   devtable[DEV_SERIAL].devnum = bios_serial_ports();
   devtable[DEV_SERIAL].dev_fops = serial_fops;
+
+  //devtable[DEV_SERIAL_PIPE].type = DEV_SERIAL_PIPE;
+  //devtable[DEV_SERIAL_PIPE].devnum = that many;
+  //devtable[DEV_SERIAL_PIPE].dev_fops = serial_pipe_fops;
+
 
   /* Initialize the serial devices */
   for(int i=0; i<bios_serial_ports(); i++) {

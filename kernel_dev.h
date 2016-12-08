@@ -104,6 +104,7 @@ typedef struct file_operations {
 typedef enum { 
 	DEV_NULL,    /**< Null device */
 	DEV_SERIAL,  /**< Serial device */
+  DEV_SERIAL_PIPE, 
 	DEV_MAX      /**< placeholder for maximum device number */
 }  Device_type;
 

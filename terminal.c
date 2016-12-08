@@ -106,8 +106,8 @@ void io_loop()
 }
 
 
-const char* disconnected = "\n\033[5;41;1;37m   *** DISCONNECTED ***   \033[0m\n";
-const char* connected = "\033[5;40;1;37m   *** CONNECTED ***   \033[0m\n";
+const char* disconnected = "\n\033[5;41;1;37m   ***~~~ DISCONNECTED ~~~***   \033[0m\n";
+const char* connected = "\033[5;40;1;37m   ***~~~ CONNECTED ~~~***   \033[0m\n";
 
 /* This call will block until the pipe is opened by the peer */
 int open_pipe(const char* fname, int flags) {
