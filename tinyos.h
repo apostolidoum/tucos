@@ -4,6 +4,10 @@
 
 #include <stdint.h>
 
+
+#include "ringbuf.h"
+//#include "ringbuf.c"
+
 /**
   @file tinyos.h
   @brief Public kernel API
@@ -498,10 +502,20 @@ int Dup2(Fid_t oldfd, Fid_t newfd);
 	Writing bytes to the write end using @c Write() will make them
 	available at the read end, unsing @c Read().
 */
-typedef struct pipe_s {
-	Fid_t read;			/**< The read end of the pipe */
-	Fid_t write;		/**< The write end of the pipe */
+
+typedef struct pipe_s{
+  //uint devno;
+  Mutex spinlock;
+  /*our stuff*/
+  CondVar pipe_has_stuff_to_read;
+  CondVar pipe_has_space_to_write;
+  ringbuf_t buffer;
+  Fid_t read; /**< The read end of the pipe */
+  Fid_t write; /**< The write end of the pipe */
 } pipe_t;
+
+#define PIPE_SIZE sizeof(pipe_t)
+
 
 
 /**
@@ -523,6 +537,15 @@ typedef struct pipe_s {
 		- the available file ids for the process are exhausted.
 */
 int Pipe(pipe_t* pipe);
+
+int pipe_read(void* dev, char *buf, unsigned int size);
+int pipe_write(void* dev, const char* buf, unsigned int size);
+void* pipe_open(uint minor);
+int pipe_close_reader(void* dev);
+int pipe_close_writer(void* dev);
+int pipe_dont_write(void* dev, const char* buf, unsigned int size);
+int pipe_dont_read(void* dev, const char* buf, unsigned int size);
+
 
 /*******************************************
  *

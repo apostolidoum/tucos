@@ -2015,7 +2015,8 @@ int main(int argc, char** argv)
 {
 	register_test(&all_tests);
 	register_test(&user_tests);
-	return run_program(argc, argv, &all_tests);
+	register_test(&pipe_tests);
+	return run_program(argc, argv, &pipe_tests);
 }
 
 
