@@ -15,7 +15,7 @@
 
 #include "util.h"
 
-/*static file_ops pipe_reader_fops = {
+static file_ops pipe_reader_fops = {
   .Open = pipe_open,    //return NULL
   .Read = pipe_read,
   .Write = pipe_dont_write, //return -1
@@ -27,8 +27,8 @@ static file_ops pipe_writer_fops = {
   .Read = pipe_dont_read,   //return -1
   .Write = pipe_write,
   .Close = pipe_close_writer 
-}; */
-
+}; 
+/*
  static file_ops pipe_reader_fops = {
   .Open = pipe_open,    //return NULL
   .Read = pipe_read,
@@ -41,7 +41,7 @@ static file_ops pipe_writer_fops = {
   .Read =  pipe_read, //pipe_dont_read,   //return -1
   .Write = pipe_write,
   .Close = pipe_close_writer 
-}; 
+}; */
 
 int Pipe(pipe_t* pipe)
 {
@@ -106,8 +106,8 @@ int Pipe(pipe_t* pipe)
 	fprintf(stderr, "%s %d\n", "pipe->write", pipe->write);
 	fprintf(stderr, "%s %d\n", "pipe->read", pipe->read);
 
-	pipe->read = fcb[1];
-	pipe->write = fcb[0];
+	pipe->read = fid[1];  //fid???
+	pipe->write = fid[0];
 	//fprintf(stderr, "%s %d\n","fcb[0]->streamobj ", fcb[0]->streamobj );
 	fprintf(stderr, "%s %d\n", "fcb[0]->streamfunc", fcb[0]->streamfunc);
 	fprintf(stderr, "%s %d\n", "fcb[1]->streamfunc", fcb[1]->streamfunc);
