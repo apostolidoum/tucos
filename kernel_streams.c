@@ -181,7 +181,7 @@ int Write(Fid_t fd, const char *buf, unsigned int size)
   
   /* Get the fields from the stream */
   FCB* fcb = get_fcb(fd);
-
+  
   if(fcb) {
     fprintf(stderr, "%s\n", "fcb allocated ok" );
     sobj = fcb->streamobj;

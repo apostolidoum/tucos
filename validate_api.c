@@ -869,6 +869,8 @@ BOOT_TEST(test_pipe_open,
 	//assert(pipe.write != NULL);
 	int rc;
 
+	fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe in boot test",pipe);
+	fprintf(stderr, "%s %d\n","!!!!___***~~~~~  &pipe in boot test",&pipe);
 	for(int i=0;i<3;i++) {
 
 		fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe.write",pipe.write);

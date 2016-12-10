@@ -46,6 +46,9 @@ static file_ops pipe_writer_fops = {
 int Pipe(pipe_t* pipe)
 {
 	fprintf(stderr, "%s\n", "im in the Pipe!!!" );
+
+	fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe send to Pipe()",pipe);
+	fprintf(stderr, "%s %d\n","!!!!___***~~~~~ &pipe send to Pipe()",&pipe);
 	//reserve space for pipe
 	//acquire 2 fcbs
 	//fcb obj = same for both
@@ -54,14 +57,19 @@ int Pipe(pipe_t* pipe)
 	/*
 	 * allocate space for pipe struct
 	 */
+	 pipe_t* pipeptr;
+	 pipeptr = &pipe;
 	fprintf(stderr, "%s %d\n","pipe address initially",pipe );
-	pipe = (pipe_t *)xmalloc(PIPE_SIZE);
+	pipeptr = (pipe_t *)xmalloc(PIPE_SIZE);
 	//assert(pipe !=NULL);
-	if(pipe ==NULL) {
+	if(pipe == NULL) {
 		fprintf(stderr, "%s\n","failed to create pipe! xmalloc shit" );
 		return -1;
 	}
-	fprintf(stderr, "%s %d\n","pipe address after malloc",pipe );
+	//fprintf(stderr, "%s %d\n","pipe address after malloc",pipe );
+
+	fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe after malloc",pipe);
+	fprintf(stderr, "%s %d\n","!!!!___***~~~~~ &pipe after malloc",&pipe);
 	/* initialize pipe values */
 	pipe->spinlock = MUTEX_INIT;
 	pipe->pipe_has_stuff_to_read = COND_INIT;
@@ -94,7 +102,7 @@ int Pipe(pipe_t* pipe)
 	fcb[1]->streamfunc = & pipe_reader_fops; 
 	fcb[0]->streamfunc = & pipe_writer_fops;
 
-	
+
 	fprintf(stderr, "%s %d\n", "pipe->write", pipe->write);
 	fprintf(stderr, "%s %d\n", "pipe->read", pipe->read);
 
