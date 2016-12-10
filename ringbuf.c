@@ -291,7 +291,7 @@ ringbuf_write(int fd, ringbuf_t rb, size_t count)
         return 0;
 
     const uint8_t *bufend = ringbuf_end(rb);
-    assert(bufend > rb->head);
+    //assert(bufend > rb->head);
     count = MIN(bufend - rb->tail, count);
     ssize_t n = write(fd, rb->tail, count);
     if (n > 0) {

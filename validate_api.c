@@ -866,14 +866,21 @@ BOOT_TEST(test_pipe_open,
 {
 	pipe_t pipe;
 	ASSERT(Pipe(&pipe)==0);	
+	//assert(pipe.write != NULL);
 	int rc;
 
 	for(int i=0;i<3;i++) {
+
+		fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe.write",pipe.write);
 		ASSERT((rc=Write(pipe.write, "Hello world", 12))==12);
+		//fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe.write",pipe.write);
 	}
 	char buffer[12] = { [0] = 0 };
 	for(int i=0;i<3;i++) {
+
+		fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe.read",pipe.read);
 		ASSERT((rc=Read(pipe.read, buffer, 12))==12);
+		//fprintf(stderr, "%s %d\n","what we read: ", buffer[0] );
 		ASSERT(strcmp(buffer, "Hello world")==0);
 	}
 	return 0;
@@ -1061,11 +1068,11 @@ TEST_SUITE(pipe_tests,
 	)
 {
 	&test_pipe_open,
-	&test_pipe_fails_on_exhausted_fid,
-	&test_pipe_close_reader,
-	&test_pipe_close_writer,
-	&test_pipe_single_producer,
-	&test_pipe_multi_producer,
+	//&test_pipe_fails_on_exhausted_fid,
+	//&test_pipe_close_reader,
+	//&test_pipe_close_writer,
+	//&test_pipe_single_producer,
+	//&test_pipe_multi_producer,
 	NULL
 };
 

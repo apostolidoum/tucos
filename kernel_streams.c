@@ -140,6 +140,10 @@ int Read(Fid_t fd, char *buf, unsigned int size)
   if(fcb) {
     sobj = fcb->streamobj;
     devread = fcb->streamfunc->Read;
+    fprintf(stderr, "%s %d\n","sobj", sobj );
+    fprintf(stderr, "%s %d\n","devread aka fcb->streamfunc", fcb->streamfunc );
+    fprintf(stderr, "%s %d\n","devread aka fcb->streamfunc->Read", fcb->streamfunc->Read );
+
 
     /* make sure that the stream will not be closed (by another thread) 
        while we are using it! */
@@ -168,6 +172,7 @@ int Read(Fid_t fd, char *buf, unsigned int size)
 
 int Write(Fid_t fd, const char *buf, unsigned int size)
 {
+  fprintf(stderr, "%s\n", "I am in vsams Write bitches...." );
   int retcode = -1;
   int (*devwrite)(void*, const char*, uint) = NULL;
   void* sobj = NULL;
@@ -178,9 +183,13 @@ int Write(Fid_t fd, const char *buf, unsigned int size)
   FCB* fcb = get_fcb(fd);
 
   if(fcb) {
-
+    fprintf(stderr, "%s\n", "fcb allocated ok" );
     sobj = fcb->streamobj;
     devwrite = fcb->streamfunc->Write;
+    fprintf(stderr, "%s %d\n","sobj", sobj );
+    fprintf(stderr, "%s %d\n","devwrite aka fcb->streamfunc", fcb->streamfunc );
+    fprintf(stderr, "%s %d\n","devwrite aka fcb->streamfunc->Write", fcb->streamfunc->Write );
+
 
     /* make sure that the stream will not be closed (by another thread) 
        while we are using it! */
