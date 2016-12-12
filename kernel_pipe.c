@@ -217,7 +217,7 @@ int pipe_write(void* dev, const char* buf, unsigned int size)
   			fprintf(stderr, "%s %d \n","tail ", tail ); 
 			int bytes_used = ringbuf_bytes_used( pipe_cb->buffer); 			
     		fprintf(stderr, "%s %d\n","!!!!! bytes used", bytes_used );*/
-  			int success = ringbuf_memset(pipe_cb->buffer, &buf[count],  1); //serial write
+  			int success = ringbuf_memset(pipe_cb->buffer, buf[count],  1); //serial write
   			/*fprintf(stderr, "%s %d\n","success aka ringbuf_write return value",success );
   			fprintf(stderr, "%s %d\n","bytes free", bu);
   			fprintf(stderr, "%s %d \n","head ", head );
