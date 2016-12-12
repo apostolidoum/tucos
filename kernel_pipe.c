@@ -71,6 +71,7 @@ int Pipe(pipe_t* pipe)
 	if(FCB_reserve(2, fid, fcb)==0 || fid[0]!=0 || fid[1]!=1)
 	{
 		printf("Failed to allocate console Fids\n");
+		return -1;
 		abort();
 	}
 	//they both point to the same object
@@ -106,7 +107,7 @@ int pipe_read(void* dev, char *buf, unsigned int size){
   	if (pipe_cb->write == NULL){ //if writer is dead
   		Mutex_Unlock(& pipe_cb->spinlock);
   		//preempt_on;           /* Restart preemption */
-  		return EOF;
+  		return 0;// EOF; //aka -1 ->error
   	} 
   	else //if writer is still alive, wait until there is something to read
   		Cond_Wait(&pipe_cb->spinlock, &pipe_cb->pipe_has_stuff_to_read); 
@@ -126,7 +127,7 @@ int pipe_read(void* dev, char *buf, unsigned int size){
     	if (pipe_cb->write == NULL){ //if writer is dead
   			Mutex_Unlock(& pipe_cb->spinlock);
   			//preempt_on;           /* Restart preemption */
-  			return EOF;
+  			return 0; //EOF;
   		} 
   		else //if writer is still alive, wait until there is something to read
   			Cond_Wait(&pipe_cb->spinlock, &pipe_cb->pipe_has_stuff_to_read);
@@ -196,7 +197,7 @@ int pipe_close_reader(void* dev)
 	pipe_t* pipe_cb = (pipe_t*)dev;
 
 	Mutex_Lock(& pipe_cb->spinlock);
-	//pipe_cb->read = NULL;
+	pipe_cb->read = NULL;
 	//wake up writer
     Cond_Broadcast(&pipe_cb->pipe_has_space_to_write);
   	Mutex_Unlock(& pipe_cb->spinlock);
@@ -210,7 +211,7 @@ int pipe_close_writer(void* dev)
 	pipe_t* pipe_cb = (pipe_t*)dev;
 
 	Mutex_Lock(& pipe_cb->spinlock);
-	//pipe_cb->write = NULL;
+	pipe_cb->write = NULL;
 	//wake up reader
     Cond_Broadcast(&pipe_cb->pipe_has_stuff_to_read);
   	Mutex_Unlock(& pipe_cb->spinlock);

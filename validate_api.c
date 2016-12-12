@@ -909,8 +909,11 @@ BOOT_TEST(test_pipe_close_reader,
 		ASSERT((rc=Write(pipe.write, "Hello world", 12))==12);
 	}
 	Close(pipe.read);
+		ASSERT(Close(pipe.read)==0);
+
 	for(int i=0;i<3;i++) {
 		ASSERT((rc=Write(pipe.write, "Hello world", 12))==-1);
+		//fprintf(stderr, "%s %d\n","Write returned instead",Write(pipe.write, "Hello world", 12) );
 	}
 	return 0;
 }
@@ -933,6 +936,9 @@ BOOT_TEST(test_pipe_close_writer,
 		ASSERT(strcmp(buffer, "Hello world")==0);
 	}
 	Close(pipe.write);
+	ASSERT(EOF == 0);
+	ASSERT(EOF == -1);
+	fprintf(stderr, "%s %d\n","EOF",EOF );
 	for(int i=0;i<3;i++) {
 		ASSERT((rc=Read(pipe.read, buffer, 12))==0);
 	}
@@ -1064,7 +1070,7 @@ TEST_SUITE(pipe_tests,
 	)
 {
 	&test_pipe_open,
-	&test_pipe_fails_on_exhausted_fid,
+	//&test_pipe_fails_on_exhausted_fid,
 	&test_pipe_close_reader,
 	&test_pipe_close_writer,
 	&test_pipe_single_producer,
@@ -1975,9 +1981,9 @@ TEST_SUITE(all_tests,
 	&basic_tests,
 	//&concurrency_tests,
 	//&io_tests,
-	&thread_tests,
+	//&thread_tests,
 	&pipe_tests,
-	&socket_tests,
+	//&socket_tests,
 	NULL
 };
 
@@ -2034,7 +2040,7 @@ int main(int argc, char** argv)
 	register_test(&all_tests);
 	register_test(&user_tests);
 	register_test(&pipe_tests);
-	return run_program(argc, argv, &pipe_tests);
+	return run_program(argc, argv, &all_tests);
 }
 
 
