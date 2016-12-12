@@ -157,7 +157,7 @@ int pipe_read(void* dev, char *buf, unsigned int size){
     //---int valid = ringbuf_read(&buf[count],pipe_cb->buffer, 1); //1 = serial read from buffer //do i need casting? Do I need *?
     fprintf(stderr, "%s %d\n","buffer vsam's", buf[count] );
 
-    int valid = ringbuf_memcpy_from(&buf[count], pipe_cb->buffer, 1); //serial write
+    int valid = ringbuf_memcpy_from((buf+count), pipe_cb->buffer, 1); //serial write
 
     fprintf(stderr, "%s %d\n","buffer ours", buf[count] );
 
