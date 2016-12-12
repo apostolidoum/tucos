@@ -869,24 +869,15 @@ BOOT_TEST(test_pipe_open,
 	//assert(pipe.write != NULL);
 	int rc;
 
-	fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe in boot test",pipe);
-	fprintf(stderr, "%s %d\n","!!!!___***~~~~~  &pipe in boot test",&pipe);
 	for(int i=0;i<3;i++) {
 
-		fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe.write",pipe.write);
 		ASSERT((rc=Write(pipe.write, "Hello world", 12))==12);
-		fprintf(stderr, "%s %d\n","write returned ",rc );
-		//fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe.write",pipe.write);
 	}
 	char buffer[12] = { [0] = 0 };
 	for(int i=0;i<3;i++) {
 
-		fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe.read",pipe.read);
 		ASSERT((rc=Read(pipe.read, buffer, 12))==12);
-		fprintf(stderr, "%s %d\n","read returned ",rc );
 
-		//fprintf(stderr, "%s %d\n","what we read: ", buffer[0] );
-		//ASSERT(strcmp(buffer, "Hello world")==0);
 	}
 	return 0;
 }
@@ -1073,11 +1064,11 @@ TEST_SUITE(pipe_tests,
 	)
 {
 	&test_pipe_open,
-	//&test_pipe_fails_on_exhausted_fid,
-	//&test_pipe_close_reader,
-	//&test_pipe_close_writer,
-	//&test_pipe_single_producer,
-	//&test_pipe_multi_producer,
+	&test_pipe_fails_on_exhausted_fid,
+	&test_pipe_close_reader,
+	&test_pipe_close_writer,
+	&test_pipe_single_producer,
+	&test_pipe_multi_producer,
 	NULL
 };
 
@@ -2011,27 +2002,18 @@ BOOT_TEST(dummy_user_test,
 	//assert(pipe.write != NULL);
 	int rc;
 
-	fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe in boot test",pipe);
-	fprintf(stderr, "%s %d\n","!!!!___***~~~~~  &pipe in boot test",&pipe);
 	for(int i=0;i<3;i++) {
 
-		fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe.write",pipe.write);
 		ASSERT((rc=Write(pipe.write, "Hello world", 12))==12);
-		fprintf(stderr, "%s %d\n","write returned ",rc );
-		//fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe.write",pipe.write);
 	}
 	char buffer[12] = { [0] = 0 };
 	for(int i=0;i<3;i++) {
 
-		fprintf(stderr, "%s %d\n","!!!!___***~~~~~ pipe.read",pipe.read);
 		ASSERT((rc=Read(pipe.read, buffer, 12))==12);
-		fprintf(stderr, "%s %d\n","read returned ",rc );
 
-		//fprintf(stderr, "%s %d\n","what we read: ", buffer[0] );
-		//ASSERT(strcmp(buffer, "Hello world")==0);
+		ASSERT(strcmp(buffer, "Hello world")==0);
 	}
 	return 0;
-	//ASSERT(1+1==2);
 }
 
 
@@ -2052,7 +2034,7 @@ int main(int argc, char** argv)
 	register_test(&all_tests);
 	register_test(&user_tests);
 	register_test(&pipe_tests);
-	return run_program(argc, argv, &user_tests);
+	return run_program(argc, argv, &pipe_tests);
 }
 
 
