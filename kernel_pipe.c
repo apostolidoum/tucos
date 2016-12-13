@@ -40,27 +40,31 @@ int Pipe(pipe_t* pipe)
 	/*
 	 * allocate space for pipe struct
 	 */
+
 	 pipe_t* pipeptr;
 	 pipeptr = &pipe;
+	if( pipe->exist_state != ALIVE){
+			pipeptr = (pipe_t *)xmalloc(PIPE_SIZE);
+			//assert(pipe !=NULL);
+			if(pipe == NULL) {
+				fprintf(stderr, "%s\n","failed to create pipe! xmalloc shit" );
+				return -1;
+			}
 
-	pipeptr = (pipe_t *)xmalloc(PIPE_SIZE);
-	//assert(pipe !=NULL);
-	if(pipe == NULL) {
-		fprintf(stderr, "%s\n","failed to create pipe! xmalloc shit" );
-		return -1;
-	}
-
-	/* initialize pipe values */
-	pipe->spinlock = MUTEX_INIT;
-	pipe->pipe_has_stuff_to_read = COND_INIT;
-  	pipe->pipe_has_space_to_write = COND_INIT;
-  	pipe->buffer = ringbuf_new(8192); //size of buffer in bytes = 8KB
-  	//assert(pipe->buffer != 0);
-  	if(& pipe->buffer == 0) {
-  		fprintf(stderr, "%s\n", "failed to create buffer....malloc??" );
-  		return -1;
+			/* initialize pipe values */
+			pipe->spinlock = MUTEX_INIT;
+			pipe->pipe_has_stuff_to_read = COND_INIT;
+		  	pipe->pipe_has_space_to_write = COND_INIT;
+		  	pipe->buffer = ringbuf_new(8192); //size of buffer in bytes = 8KB
+		  	pipe->exist_state = ALIVE; //the pipe has been created
+		  	pipe->read = PIPE_NULL_FID;  
+			pipe->write = PIPE_NULL_FID;
+		  	//assert(pipe->buffer != 0);
+		  	if(& pipe->buffer == 0) {
+		  		fprintf(stderr, "%s\n", "failed to create buffer....malloc??" );
+		  		return -1;
+		  	}
   	}
-
 	Fid_t fid[2];
 	FCB* fcb[2];
 	/*
@@ -78,14 +82,15 @@ int Pipe(pipe_t* pipe)
 	fcb[0]->streamobj = pipe;
 	fcb[1]->streamobj = pipe;
 
-	//fcb[0] corresponds to wr
-	//fcb[1] corresponds to rd
-	fcb[1]->streamfunc = & pipe_reader_fops; 
-	fcb[0]->streamfunc = & pipe_writer_fops;
+	//fcb[0] corresponds to reader
+	//fcb[1] corresponds to writer
+	fcb[0]->streamfunc = & pipe_reader_fops; 
+	fcb[1]->streamfunc = & pipe_writer_fops;
 
+	//fprintf(stderr, "%s %d\n", "writer's streamfunc write == ", fcb[1]->streamfunc->Write );
 
-	pipe->read = fid[1];  
-	pipe->write = fid[0];
+	pipe->read = fid[0];  
+	pipe->write = fid[1];
 	return 0;
 }
 
@@ -104,7 +109,7 @@ int pipe_read(void* dev, char *buf, unsigned int size){
   uint count =  0;
 
   if (ringbuf_is_empty(pipe_cb->buffer)){ 
-  	if (pipe_cb->write == NULL){ //if writer is dead
+  	if (pipe_cb->write == PIPE_NULL_FID){ //if writer is dead
   		Mutex_Unlock(& pipe_cb->spinlock);
   		//preempt_on;           /* Restart preemption */
   		return 0;// EOF; //aka -1 ->error
@@ -124,10 +129,10 @@ int pipe_read(void* dev, char *buf, unsigned int size){
       Cond_Broadcast(&pipe_cb->pipe_has_space_to_write);
     }
     else{ //if the buffer is empty
-    	if (pipe_cb->write == NULL){ //if writer is dead
+    	if (pipe_cb->write == PIPE_NULL_FID){ //if writer is dead
   			Mutex_Unlock(& pipe_cb->spinlock);
   			//preempt_on;           /* Restart preemption */
-  			return 0; //EOF;
+  			return count; //0; //EOF;
   		} 
   		else //if writer is still alive, wait until there is something to read
   			Cond_Wait(&pipe_cb->spinlock, &pipe_cb->pipe_has_stuff_to_read);
@@ -146,6 +151,7 @@ int pipe_read(void* dev, char *buf, unsigned int size){
 int pipe_write(void* dev, const char* buf, unsigned int size)
 {
   pipe_t* pipe_cb = (pipe_t*)dev;
+   		//fprintf(stderr, "%s\n", "Entering funcop 'write'" );
 
 
   //preempt_off;            /* Stop preemption */
@@ -153,9 +159,10 @@ int pipe_write(void* dev, const char* buf, unsigned int size)
 
   unsigned int count = 0;
   while(count < size) {
-  	if (pipe_cb->read == NULL){ //reader has closed, all hope is lost....
+  	if (pipe_cb->read == PIPE_NULL_FID){ //reader has closed, all hope is lost....
   		Mutex_Unlock(& pipe_cb->spinlock);
  		//preempt_on;           /* Restart preemption */
+ 		//fprintf(stderr, "%s\n", "leaving 'write', read was NULL, return -1" );
   		return -1;
   	}
   	else{
@@ -181,6 +188,7 @@ int pipe_write(void* dev, const char* buf, unsigned int size)
   Mutex_Unlock(& pipe_cb->spinlock);
   //preempt_on;           /* Restart preemption */
 
+  	//fprintf(stderr, "%s %d\n", "write's count", count );
 
   return count;
   
@@ -197,10 +205,17 @@ int pipe_close_reader(void* dev)
 	pipe_t* pipe_cb = (pipe_t*)dev;
 
 	Mutex_Lock(& pipe_cb->spinlock);
-	pipe_cb->read = NULL;
-	//wake up writer
-    Cond_Broadcast(&pipe_cb->pipe_has_space_to_write);
+		pipe_cb->read = PIPE_NULL_FID;
+		//wake up writer
+		Cond_Broadcast(&pipe_cb->pipe_has_space_to_write);
+
+	
   	Mutex_Unlock(& pipe_cb->spinlock);
+  	//clean up pipe space, destroy everything
+  	//if(pipe_cb->read == NULL && pipe_cb->write == NULL ){
+	// 		free(pipe_cb);
+
+  	//}
 
 
   return 0;
@@ -211,10 +226,15 @@ int pipe_close_writer(void* dev)
 	pipe_t* pipe_cb = (pipe_t*)dev;
 
 	Mutex_Lock(& pipe_cb->spinlock);
-	pipe_cb->write = NULL;
-	//wake up reader
-    Cond_Broadcast(&pipe_cb->pipe_has_stuff_to_read);
+		pipe_cb->write = PIPE_NULL_FID;
+		//wake up reader
+    	Cond_Broadcast(&pipe_cb->pipe_has_stuff_to_read);
   	Mutex_Unlock(& pipe_cb->spinlock);
+  	//clean up pipe space, destroy everything
+  	//if(pipe_cb->read == NULL && pipe_cb->write == NULL ){
+  	//	free(pipe_cb);
+
+  	//}
 
   return 0;
 }

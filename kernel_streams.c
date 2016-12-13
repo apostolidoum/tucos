@@ -182,7 +182,8 @@ int Write(Fid_t fd, const char *buf, unsigned int size)
   if(fcb) {
     sobj = fcb->streamobj;
     devwrite = fcb->streamfunc->Write;
-
+    //fprintf(stderr, "%s %d\n", "In Write() sobj = fcb->streamobj ==", sobj );
+    //fprintf(stderr, "%s %d\n", "devwrite = fcb->streamfunc->Write == ", devwrite );
 
     /* make sure that the stream will not be closed (by another thread) 
        while we are using it! */
@@ -201,6 +202,8 @@ int Write(Fid_t fd, const char *buf, unsigned int size)
   }
 
   Mutex_Unlock(& kernel_mutex);
+
+        //fprintf(stderr, "%s %d\n", "Write()'s return == ", retcode );
 
   return retcode;
 }

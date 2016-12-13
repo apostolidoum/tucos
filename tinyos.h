@@ -502,7 +502,11 @@ int Dup2(Fid_t oldfd, Fid_t newfd);
 	Writing bytes to the write end using @c Write() will make them
 	available at the read end, unsing @c Read().
 */
-
+  typedef enum { 
+    PIPE_DEAD,   /**< Means that, pipe does not exist */
+    PIPE_ALIVE    /**< Means that, pipe has already been created */
+  } Pipe_Existance;
+#define PIPE_NULL_FID -1 
 typedef struct pipe_s{
   //uint devno;
   Mutex spinlock;
@@ -510,6 +514,7 @@ typedef struct pipe_s{
   CondVar pipe_has_stuff_to_read;
   CondVar pipe_has_space_to_write;
   ringbuf_t buffer;
+  Pipe_Existance exist_state;
   Fid_t read; /**< The read end of the pipe */
   Fid_t write; /**< The write end of the pipe */
 } pipe_t;
@@ -532,6 +537,7 @@ typedef struct pipe_s{
 	if the write end is closed, the read end continues to operate until
 	the buffer is empty, at which point calls to @c Read return 0.
 
+  fprintf(stderr, "%s %d\n","pipe.write", pipe.write);
 	@param pipe a pointer to a pipe_t structure for storing the file ids.
 	@returns 0 on success, or -1 on error. Possible reasons for error:
 		- the available file ids for the process are exhausted.
