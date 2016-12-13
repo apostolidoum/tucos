@@ -985,7 +985,7 @@ int data_consumer(int argl, void* args)
 
 	int rc = 1;
 	while(rc) {
-		rc = Read(0, buffer, 16384); //what's 0????????
+		rc = Read(0, buffer, 16384); 
 		assert(rc>=0);
 		count += rc;
 	}
