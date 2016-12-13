@@ -367,7 +367,62 @@ void Exit(int exitval)
 
 
 Fid_t OpenInfo()
-{
-	return NOFILE;
+{   
+  pipe_t pipe;
+  //create and open a new pipe
+  
+  // check what are the possible reasons of error
+  //pipe was not created
+  if (Pipe(&pipe)==-1){
+    return NOFILE;
+  }
+  else{
+    for (uint i = 0; i<MAX_PROC; i++){
+      //if the process state is not FREE
+      //get_pcb returns NULL if the PT[i] is FREE
+      PCB* pcb = get_pcb(i);
+      if( pcb != NULL ){
+        /*
+          create a procinfo 
+        */
+        procinfo * info = (procinfo *)xmalloc(sizeof(procinfo));
+        info->pid = i;      
+        info->ppid = get_pid(pcb->parent);  
+        //Non-zero if process is alive, zero if process is zombie. */   
+        if(pcb->pstate == ZOMBIE)
+          info->alive = 0;
+        else info->alive = 1;        
+        
+        
+        info->thread_count = rlist_len(& pcb->ptcb_list); //Current no of threads. 
+        
+        info->main_task = pcb->main_task;  
+        info->argl = pcb->argl; 
+          
+        for(uint j = 0; j<PROCINFO_MAX_ARGS_SIZE; j++)  {
+           *((info->args)+j) = (char)((pcb->args)+j); /**< @brief The first 
+          @c PROCINFO_MAX_ARGS_SIZE bytes of the argument of the main task. 
+
+          If the task's argument is longer (as designated by the @c argl field), the
+          bytes contained in this field are just the prefix.  */
+
+        }  
+       
+
+        /*
+          write procinfo to buffer
+        */
+          Write(pipe.write, &info,sizeof(info));
+
+      }
+      
+    }
+    Close(pipe.write);
+    return pipe.read;
+
+  }
+ 
+  
+	
 }
 
