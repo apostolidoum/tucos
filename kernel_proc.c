@@ -3,6 +3,7 @@
 #include "kernel_cc.h"
 #include "kernel_proc.h"
 #include "kernel_streams.h"
+#include <string.h>
 
 
 /* 
@@ -377,6 +378,7 @@ Fid_t OpenInfo()
     return NOFILE;
   }
   else{
+	printf("Pipe created successfully, pipe.write and pipe.read: %d, %d\n", pipe.write, pipe.read );
     for (uint i = 0; i<MAX_PROC; i++){
       //if the process state is not FREE
       //get_pcb returns NULL if the PT[i] is FREE
@@ -385,39 +387,51 @@ Fid_t OpenInfo()
         /*
           create a procinfo 
         */
-        procinfo * info = (procinfo *)xmalloc(sizeof(procinfo));
-        info->pid = i;      
-        info->ppid = get_pid(pcb->parent);  
+        procinfo info;//* info = (procinfo *)xmalloc(sizeof(procinfo));
+        info.pid = i;      
+        info.ppid = get_pid(pcb->parent);  
         //Non-zero if process is alive, zero if process is zombie. */   
         if(pcb->pstate == ZOMBIE)
-          info->alive = 0;
-        else info->alive = 1;        
+          info.alive = 0;
+        else info.alive = 1;        
         
         
-        info->thread_count = rlist_len(& pcb->ptcb_list); //Current no of threads. 
+        info.thread_count = rlist_len(& pcb->ptcb_list); //Current no of threads. 
         
-        info->main_task = pcb->main_task;  
-        info->argl = pcb->argl; 
-          
-        for(uint j = 0; j<PROCINFO_MAX_ARGS_SIZE; j++)  {
-           *((info->args)+j) = (char)((pcb->args)+j); /**< @brief The first 
+        info.main_task = pcb->main_task;  
+        info.argl = pcb->argl; 
+           printf("Ready to fill info->args\n" );
+	
+	strncpy(info.args, & pcb->args, PROCINFO_MAX_ARGS_SIZE);
+	info.args[PROCINFO_MAX_ARGS_SIZE-1] = '\0';
+	printf("info.args[PROCINFO_MAX_ARGS_SIZE-1] must be END OF STRING : %c\n", info.args[PROCINFO_MAX_ARGS_SIZE-1] ); 
+	printf("& pipe->args : %d\n", & pcb->args ); 	
+	printf("info.args[0] : %d\n", info.args[0] ); 
+	printf("info.args[0] : %d\n", info.args[1] );     
+	/*for(uint j = 0; j<PROCINFO_MAX_ARGS_SIZE; j++)  {
+		fprintf("Inside for-loop, j = %d\n", j);
+		info->args[j] = pcb->args[j]; /**< @brief The first 
           @c PROCINFO_MAX_ARGS_SIZE bytes of the argument of the main task. 
 
           If the task's argument is longer (as designated by the @c argl field), the
-          bytes contained in this field are just the prefix.  */
+          bytes contained in this field are just the prefix.  
 
-        }  
+        } */ 
        
 
         /*
           write procinfo to buffer
         */
-          Write(pipe.write, &info,sizeof(info));
+		printf("Ready to write procinfo in the pipe\n" );
+	
+          Write(pipe.write, &info , sizeof(info));
 
       }
-      
+    	//printf("Ready to load procinfo number %d from PT[]\n", i );	  
     }
+	printf("Ready to close pipe.write = %d \n", pipe.write );
     Close(pipe.write);
+	printf("Ready to return pipe.read = %d \n", pipe.read );
     return pipe.read;
 
   }

@@ -174,6 +174,7 @@ int SystemInfo(size_t argc, const char** argv)
 			);
 		/* Read in next piece of info */		
 		while(Read(finfo, (char*) &info, sizeof(info)) > 0) {
+		printf("Reading first info\n");
 			Program prog=NULL;
 			const char* argv[10];
 			int argc = ParseProcInfo(&info, &prog, 10, argv);

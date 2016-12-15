@@ -866,8 +866,6 @@ BOOT_TEST(test_pipe_open,
 {
 	pipe_t pipe;
 	ASSERT(Pipe(&pipe)==0);	
-	fprintf(stderr, "%s %d\n","pipe.read", pipe.read);
-	fprintf(stderr, "%s %d\n","pipe.write", pipe.write);
 	int rc;
 
 	for(int i=0;i<3;i++) {
@@ -880,6 +878,8 @@ BOOT_TEST(test_pipe_open,
 		ASSERT((rc=Read(pipe.read, buffer, 12))==12);
 
 	}
+	Close(pipe.write);
+	Close(pipe.read);
 	return 0;
 }
 
@@ -891,8 +891,6 @@ BOOT_TEST(test_pipe_fails_on_exhausted_fid,
 	pipe_t pipe;
 	ASSERT(&pipe == NULL);
 
-
-	fprintf(stderr, "%s %d\n","pipe",pipe );
 	for(uint i=0; i< (MAX_FILEID/2); i++ )
 		ASSERT(Pipe(&pipe)==0);
 	for(uint i=0; i< (MAX_FILEID/2); i++ )
@@ -920,6 +918,7 @@ BOOT_TEST(test_pipe_close_reader,
 		ASSERT((rc=Write(pipe.write, "Hello world", 12))==-1);
 		//fprintf(stderr, "%s %d\n","Write returned instead",Write(pipe.write, "Hello world", 12) );
 	}
+	Close(pipe.write);
 	return 0;
 }
 
@@ -947,6 +946,7 @@ BOOT_TEST(test_pipe_close_writer,
 	for(int i=0;i<3;i++) {
 		ASSERT((rc=Read(pipe.read, buffer, 12))==0);
 	}
+	Close(pipe.read);
 	return 0;
 }
 

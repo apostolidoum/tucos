@@ -72,7 +72,7 @@ int Pipe(pipe_t* pipe)
 	 */
 	/* Since FCB_reserve allocates fids in increasing order,
 	   we expect pair[0]==0 and pair[1]==1 */
-	if(FCB_reserve(2, fid, fcb)==0 || fid[0]!=0 || fid[1]!=1)
+	if(FCB_reserve(2, fid, fcb)==0)// || fid[0]!=0 || fid[1]!=1)
 	{
 		printf("Failed to allocate console Fids\n");
 		return -1;
@@ -102,13 +102,16 @@ int Pipe(pipe_t* pipe)
 int pipe_read(void* dev, char *buf, unsigned int size){
 	
   pipe_t* pipe_cb = (pipe_t*)dev;
-
+	printf("Reading pipe - PIPE_READ\n" );
   //preempt_off;            /* Stop preemption */
   Mutex_Lock(& pipe_cb->spinlock);
 
   uint count =  0;
 
+printf("Checking if buffer is empty: %d - PIPE_READ\n", ringbuf_is_empty(pipe_cb->buffer) );
+
   if (ringbuf_is_empty(pipe_cb->buffer)){ 
+	printf("Buffer is empty! - PIPE_READ\n" );
   	if (pipe_cb->write == PIPE_NULL_FID){ //if writer is dead
   		Mutex_Unlock(& pipe_cb->spinlock);
   		//preempt_on;           /* Restart preemption */
@@ -117,13 +120,14 @@ int pipe_read(void* dev, char *buf, unsigned int size){
   	else //if writer is still alive, wait until there is something to read
   		Cond_Wait(&pipe_cb->spinlock, &pipe_cb->pipe_has_stuff_to_read); 
   }
-
+	printf("Entering while-loop to read - PIPE_READ\n" );
   while(count<size) { 
 
     int valid = ringbuf_memcpy_from((buf+count), pipe_cb->buffer, 1); //serial write
-
+	
 
     if (valid){ //if we successfully read something
+	printf("Successfully read something - PIPE_READ\n" );
       count++;
       //wake up writer
       Cond_Broadcast(&pipe_cb->pipe_has_space_to_write);
@@ -141,6 +145,7 @@ int pipe_read(void* dev, char *buf, unsigned int size){
 
   Mutex_Unlock(& pipe_cb->spinlock);
   //preempt_on;           /* Restart preemption */
+	printf("Returning count: %d - PIPE_READ\n", count );
   return count;
 }
 
@@ -152,7 +157,6 @@ int pipe_write(void* dev, const char* buf, unsigned int size)
 {
   pipe_t* pipe_cb = (pipe_t*)dev;
    		//fprintf(stderr, "%s\n", "Entering funcop 'write'" );
-
 
   //preempt_off;            /* Stop preemption */
   Mutex_Lock(& pipe_cb->spinlock);
@@ -166,9 +170,10 @@ int pipe_write(void* dev, const char* buf, unsigned int size)
   		return -1;
   	}
   	else{
+		printf("Is there space to read? Bytes free: %d - PIPE_WRITE\n", ringbuf_bytes_free(pipe_cb->buffer) );
   		if(ringbuf_bytes_free(pipe_cb->buffer)>0){//&* ???????
   			//there is some space to write
-  			
+  				printf("I am about to write buf[count]: %c - PIPE_WRITE\n", buf[count] );
   			int success = ringbuf_memset(pipe_cb->buffer, buf[count],  1); //serial write
   			
   			assert(success >0);
@@ -189,7 +194,8 @@ int pipe_write(void* dev, const char* buf, unsigned int size)
   //preempt_on;           /* Restart preemption */
 
   	//fprintf(stderr, "%s %d\n", "write's count", count );
-
+	printf("Returning count: %d - PIPE_WRITE\n", count );
+  		
   return count;
   
   
@@ -203,7 +209,7 @@ void* pipe_open(uint minor)
 int pipe_close_reader(void* dev) 
 {
 	pipe_t* pipe_cb = (pipe_t*)dev;
-
+		
 	Mutex_Lock(& pipe_cb->spinlock);
 		pipe_cb->read = PIPE_NULL_FID;
 		//wake up writer
