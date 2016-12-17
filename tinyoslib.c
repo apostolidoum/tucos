@@ -116,10 +116,12 @@ int ParseProcInfo(procinfo* pinfo, Program* prog, int argc, const char** argv )
 {
 	if(pinfo->main_task != exec_wrapper)
 		/* We do not recognize the format! */
+		printf("main_task has failed us\n");
 		return -1;
 
 	if(pinfo->argl > PROCINFO_MAX_ARGS_SIZE) 
 		/* The full argument is not available */
+		printf("args is tooo big\n");
 		return -1;
 
 	int argl = pinfo->argl;

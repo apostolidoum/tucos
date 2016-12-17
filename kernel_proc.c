@@ -412,10 +412,7 @@ Fid_t OpenInfo()
 	info.args[PROCINFO_MAX_ARGS_SIZE-1] = '\0';
 	
 	printf("info.args full of 'n': %s\n", info.args );
-	//printf("info.args[PROCINFO_MAX_ARGS_SIZE-1] must be END OF STRING : %c\n", info.args[PROCINFO_MAX_ARGS_SIZE-1] ); 
-	//printf("& pipe->args : %d\n", & pcb->args ); 	
-	//printf("info.args[0] : %d\n", info.args[0] ); 
-	//printf("info.args[0] : %d\n", info.args[1] );     
+	    
 	/*for(uint j = 0; j<PROCINFO_MAX_ARGS_SIZE; j++)  {
 		fprintf("Inside for-loop, j = %d\n", j);
 		info->args[j] = pcb->args[j]; /**< @brief The first 
@@ -428,15 +425,6 @@ Fid_t OpenInfo()
        
 	//WE HAVE TO TRANSORM THE STRUCT "INFO" INTO A BYTES STRING
 	
-	/*unsigned char raw[200];
-	printf("Right before the first memcopy, sizeof(info.pid) = %d\n", sizeof(info.pid));
-	memcpy(raw, info.pid, sizeof(info.pid));
-	memcpy(raw + sizeof(info.pid), info.ppid, sizeof(info.ppid));
-	memcpy(raw + sizeof(info.pid) + sizeof(info.ppid), info.alive, sizeof(info.alive));
-	memcpy(raw + sizeof(info.pid) + sizeof(info.ppid) + sizeof(info.alive), info.thread_count, sizeof(info.thread_count));
-	memcpy(raw + sizeof(info.pid) + sizeof(info.ppid) + sizeof(info.alive) + sizeof(info.thread_count), info.main_task, sizeof(info.main_task));
-	memcpy(raw + sizeof(info.pid) + sizeof(info.ppid) + sizeof(info.alive) + sizeof(info.thread_count) + sizeof(info.main_task), info.argl, sizeof(info.argl));
-	memcpy(raw + sizeof(info.pid) + sizeof(info.ppid) + sizeof(info.alive) + sizeof(info.thread_count) + sizeof(info.main_task) + sizeof(info.argl), info.args, sizeof(info.args)); */
 	
 	char raw[sizeof(procinfo)];
 
@@ -460,7 +448,8 @@ Fid_t OpenInfo()
 	Read(pipe.read, (char*)&raw, sizeof(raw)); */ //SUCCEEDED
 
 	printf("Ready to return pipe.read = %d \n", pipe.read );
-    return pipe.read;
+    return pipe.read ; //because etsi
+   
 
   }
  

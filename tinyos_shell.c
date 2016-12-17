@@ -168,34 +168,97 @@ int SystemInfo(size_t argc, const char** argv)
 {
 	printf("Number of cores         = %d\n", cpu_cores());
 	printf("Number of serial devices= %d\n", bios_serial_ports());
+	 Fid_t finfo;	
+	//Fid_t finfo = OpenInfo();
+	/**************************************
+		* openinfo() code 
+		***********************************/
+		pipe_t pipe;
+  //create and open a new pipe
+  
+  // check what are the possible reasons of error
+  //pipe was not created
+  if (Pipe(&pipe)==-1){
+    return NOFILE;
+  }
+  else{
+	printf("Pipe created successfully, pipe.write and pipe.read: %d, %d\n", pipe.write, pipe.read );
+    for (uint i = 0; i<MAX_PROC; i++){
+      //if the process state is not FREE
+      //get_pcb returns NULL if the PT[i] is FREE
+      PCB* pcb = get_pcb(i);
+      if( pcb != NULL ){
+        /*
+          create a procinfo 
+        */
+        procinfo info;//* info = (procinfo *)xmalloc(sizeof(procinfo));
+        info.pid = i;
+        info.ppid = get_pid(pcb->parent);
+        //Non-zero if process is alive, zero if process is zombie. */   
+        if(pcb->pstate == ZOMBIE)
+          info.alive = 0;
+        else info.alive = 1;        
+        
+        info.thread_count = rlist_len(& pcb->ptcb_list); //Current no of threads. 
+
+        info.main_task = pcb->main_task;  
+        printf("info.maim_task %d\n",info.main_task);
+        printf("pcb->maim_task %d\n",pcb->main_task);
+        info.argl =  pcb->argl; 
+        printf("info argl %d\n",info.argl );
+        //info.argl = 5;
+           printf("Ready to fill info->args\n" );
+		if (pcb->argl <= PROCINFO_MAX_ARGS_SIZE){
+			strncpy(info.args, pcb->args, pcb->argl);
+		}
+		else{
+			strncpy(info.args, pcb->args, PROCINFO_MAX_ARGS_SIZE);
+		}
+	
+       
+	//WE HAVE TO TRANSORM THE STRUCT "INFO" INTO A BYTES STRING
+	
+	
+	char raw[sizeof(procinfo)];
+
+	memcpy(raw, &info, sizeof info);
+        /*
+          write procinfo to buffer
+        */
 		
-	Fid_t finfo = OpenInfo();
+          Write(pipe.write, (char*)&raw, sizeof(raw));
+
+      }	  
+    }
+	
+    Close(pipe.write);
+	
+	
+	finfo = pipe.read;
+
+	}
+	/**************************************
+		*
+		***********************************/
 	
 	if(finfo!=NOFILE) {
 		/* Print per-process info */
 		procinfo info;
-		printf("finfo: %d, sizeof(info): %d\n", finfo, sizeof info);
 		
 		//TESTING THAT OUR PIPE IS VISIBLE HERE	
 		void* sobj;
 		FCB* fcb = get_fcb(finfo);
       		sobj = fcb->streamobj;
 		pipe_t* pipe_cb = (pipe_t*)sobj;
-		printf("pipe_cb->read must be 3 (equal to finfo): %d\n", pipe_cb->read );
-		//////////////////////////////
 
 		printf("%5s %5s %6s %8s %20s\n",
 			"PID", "PPID", "State", "Threads", "Main program"
 			);
 		/* Read in next piece of info */
 
-		printf("CURPROC before Read(): %d\n", CURPROC );
-		printf("CURPROC in Read(): %d\n", CURPROC );
-		for(int i=0;i<MAX_FILEID;i++)
-			printf("CURPROC's FIDT[%d]: %d\n", i, CURPROC->FIDT[i]);		
+		for(int i=0;i<MAX_FILEID;i++)	
 		
-		while(Read(finfo, (char*)&info, sizeof(info)) > 0){
-		printf("Reading first info\n");
+		while(Read(finfo, &info, sizeof(info)) > 0){
 			Program prog=NULL;
 			const char* argv[10];
 			int argc = ParseProcInfo(&info, &prog, 10, argv);
@@ -217,7 +280,9 @@ int SystemInfo(size_t argc, const char** argv)
 				);
 		}
 	}
-	printf("\n");
+
+	
+	Close(pipe.read);
 	return 0;
 }
 

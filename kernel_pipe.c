@@ -47,7 +47,7 @@ int Pipe(pipe_t* pipe)
 			pipeptr = (pipe_t *)xmalloc(PIPE_SIZE);
 			//assert(pipe !=NULL);
 			if(pipe == NULL) {
-				fprintf(stderr, "%s\n","failed to create pipe! xmalloc shit" );
+				fprintf(stderr, "%s\n","failed to create pipe! xmalloc " );
 				return -1;
 			}
 
@@ -61,7 +61,7 @@ int Pipe(pipe_t* pipe)
 			pipe->write = PIPE_NULL_FID;
 		  	//assert(pipe->buffer != 0);
 		  	if(& pipe->buffer == 0) {
-		  		fprintf(stderr, "%s\n", "failed to create buffer....malloc??" );
+		  		fprintf(stderr, "%s\n", "failed to create buffer...." );
 		  		return -1;
 		  	}
   	}
@@ -102,21 +102,12 @@ int Pipe(pipe_t* pipe)
 int pipe_read(void* dev, char *buf, unsigned int size){
 		
   pipe_t* pipe_cb = (pipe_t*)dev;
-	printf("Reading pipe - PIPE_READ\n" );
   //preempt_off;            /* Stop preemption */
   Mutex_Lock(& pipe_cb->spinlock);
   uint count =  0;
 
-	printf("CURPROC in Read(): %d\n", CURPROC );
-	for(int i=0;i<MAX_FILEID;i++)
-		printf("CURPROC's FIDT[%d]: %d\n", i, CURPROC->FIDT[i]);
-
-printf("Pipe CB fids in READ (read: %d and write: %d)\n", pipe_cb->read, pipe_cb->write);
-
-printf("Checking if buffer is empty: %d - PIPE_READ\n", ringbuf_is_empty(pipe_cb->buffer) );
 
   if (ringbuf_is_empty(pipe_cb->buffer)){ 
-	printf("Buffer is empty! - PIPE_READ\n" );
   	if (pipe_cb->write == PIPE_NULL_FID){ //if writer is dead
   		Mutex_Unlock(& pipe_cb->spinlock);
   		//preempt_on;           /* Restart preemption */
@@ -125,14 +116,12 @@ printf("Checking if buffer is empty: %d - PIPE_READ\n", ringbuf_is_empty(pipe_cb
   	else //if writer is still alive, wait until there is something to read
   		Cond_Wait(&pipe_cb->spinlock, &pipe_cb->pipe_has_stuff_to_read); 
   }
-	printf("Entering while-loop to read - PIPE_READ\n" );
   while(count<size) { 
 
     int valid = ringbuf_memcpy_from((buf+count), pipe_cb->buffer, 1); //serial write
 	
 
     if (valid){ //if we successfully read something
-	printf("Successfully read something - PIPE_READ\n" );
       count++;
       //wake up writer
       Cond_Broadcast(&pipe_cb->pipe_has_space_to_write);
@@ -150,7 +139,6 @@ printf("Checking if buffer is empty: %d - PIPE_READ\n", ringbuf_is_empty(pipe_cb
 
   Mutex_Unlock(& pipe_cb->spinlock);
   //preempt_on;           /* Restart preemption */
-	printf("Returning count: %d - PIPE_READ\n", count );
   return count;
 }
 
@@ -165,7 +153,6 @@ int pipe_write(void* dev, const char* buf, unsigned int size)
 
   //preempt_off;            /* Stop preemption */
   Mutex_Lock(& pipe_cb->spinlock);
-	printf("Pipe CB fids in WRITE (read: %d and write: %d)\n", pipe_cb->read, pipe_cb->write);
   unsigned int count = 0;
   while(count < size) {
   	if (pipe_cb->read == PIPE_NULL_FID){ //reader has closed, all hope is lost....
@@ -198,9 +185,6 @@ int pipe_write(void* dev, const char* buf, unsigned int size)
   Mutex_Unlock(& pipe_cb->spinlock);
   //preempt_on;           /* Restart preemption */
 
-  	//fprintf(stderr, "%s %d\n", "write's count", count );
-	//printf("Returning count: %d - PIPE_WRITE\n", count );
-  		
   return count;
   
   
