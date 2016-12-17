@@ -100,13 +100,18 @@ int Pipe(pipe_t* pipe)
   Read from the pipe (device), sleeping if needed.
  */
 int pipe_read(void* dev, char *buf, unsigned int size){
-	
+		
   pipe_t* pipe_cb = (pipe_t*)dev;
 	printf("Reading pipe - PIPE_READ\n" );
   //preempt_off;            /* Stop preemption */
   Mutex_Lock(& pipe_cb->spinlock);
-
   uint count =  0;
+
+	printf("CURPROC in Read(): %d\n", CURPROC );
+	for(int i=0;i<MAX_FILEID;i++)
+		printf("CURPROC's FIDT[%d]: %d\n", i, CURPROC->FIDT[i]);
+
+printf("Pipe CB fids in READ (read: %d and write: %d)\n", pipe_cb->read, pipe_cb->write);
 
 printf("Checking if buffer is empty: %d - PIPE_READ\n", ringbuf_is_empty(pipe_cb->buffer) );
 
@@ -160,7 +165,7 @@ int pipe_write(void* dev, const char* buf, unsigned int size)
 
   //preempt_off;            /* Stop preemption */
   Mutex_Lock(& pipe_cb->spinlock);
-
+	printf("Pipe CB fids in WRITE (read: %d and write: %d)\n", pipe_cb->read, pipe_cb->write);
   unsigned int count = 0;
   while(count < size) {
   	if (pipe_cb->read == PIPE_NULL_FID){ //reader has closed, all hope is lost....
@@ -170,10 +175,10 @@ int pipe_write(void* dev, const char* buf, unsigned int size)
   		return -1;
   	}
   	else{
-		printf("Is there space to read? Bytes free: %d - PIPE_WRITE\n", ringbuf_bytes_free(pipe_cb->buffer) );
+		//printf("Is there space to read? Bytes free: %d - PIPE_WRITE\n", ringbuf_bytes_free(pipe_cb->buffer) );
   		if(ringbuf_bytes_free(pipe_cb->buffer)>0){//&* ???????
   			//there is some space to write
-  				printf("I am about to write buf[count]: %c - PIPE_WRITE\n", buf[count] );
+  				//printf("I am about to write buf[count]: %c - PIPE_WRITE\n", buf[count] );
   			int success = ringbuf_memset(pipe_cb->buffer, buf[count],  1); //serial write
   			
   			assert(success >0);
@@ -194,7 +199,7 @@ int pipe_write(void* dev, const char* buf, unsigned int size)
   //preempt_on;           /* Restart preemption */
 
   	//fprintf(stderr, "%s %d\n", "write's count", count );
-	printf("Returning count: %d - PIPE_WRITE\n", count );
+	//printf("Returning count: %d - PIPE_WRITE\n", count );
   		
   return count;
   

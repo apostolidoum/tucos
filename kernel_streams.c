@@ -131,17 +131,15 @@ int Read(Fid_t fd, char *buf, unsigned int size)
   int retcode = -1;
   int (*devread)(void*,char*,uint);
   void* sobj;
-
+	
   Mutex_Lock(&kernel_mutex);
   
   /* Get the fields from the stream */
   FCB* fcb = get_fcb(fd);
-
+	
   if(fcb) {
     sobj = fcb->streamobj;
     devread = fcb->streamfunc->Read;
-   
-
 
     /* make sure that the stream will not be closed (by another thread) 
        while we are using it! */

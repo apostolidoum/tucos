@@ -8,6 +8,9 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+#include "kernel_streams.h"
+#include "kernel_proc.h"
+
 #include "tinyoslib.h"
 #include "symposium.h"
 #include "bios.h"
@@ -165,15 +168,33 @@ int SystemInfo(size_t argc, const char** argv)
 {
 	printf("Number of cores         = %d\n", cpu_cores());
 	printf("Number of serial devices= %d\n", bios_serial_ports());
+		
 	Fid_t finfo = OpenInfo();
+	
 	if(finfo!=NOFILE) {
 		/* Print per-process info */
 		procinfo info;
+		printf("finfo: %d, sizeof(info): %d\n", finfo, sizeof info);
+		
+		//TESTING THAT OUR PIPE IS VISIBLE HERE	
+		void* sobj;
+		FCB* fcb = get_fcb(finfo);
+      		sobj = fcb->streamobj;
+		pipe_t* pipe_cb = (pipe_t*)sobj;
+		printf("pipe_cb->read must be 3 (equal to finfo): %d\n", pipe_cb->read );
+		//////////////////////////////
+
 		printf("%5s %5s %6s %8s %20s\n",
 			"PID", "PPID", "State", "Threads", "Main program"
 			);
-		/* Read in next piece of info */		
-		while(Read(finfo, (char*) &info, sizeof(info)) > 0) {
+		/* Read in next piece of info */
+
+		printf("CURPROC before Read(): %d\n", CURPROC );
+		printf("CURPROC in Read(): %d\n", CURPROC );
+		for(int i=0;i<MAX_FILEID;i++)
+			printf("CURPROC's FIDT[%d]: %d\n", i, CURPROC->FIDT[i]);		
+		
+		while(Read(finfo, (char*)&info, sizeof(info)) > 0){
 		printf("Reading first info\n");
 			Program prog=NULL;
 			const char* argv[10];

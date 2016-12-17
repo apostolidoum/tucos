@@ -388,26 +388,34 @@ Fid_t OpenInfo()
           create a procinfo 
         */
         procinfo info;//* info = (procinfo *)xmalloc(sizeof(procinfo));
-        info.pid = i;      
-        info.ppid = get_pid(pcb->parent);  
+        info.pid = i;
+	printf("& pipe->args : %d\n", info.pid );       
+        info.ppid = get_pid(pcb->parent);
+	printf("info.ppid = get_pid(pcb->parent): %d\n", info.ppid );  
         //Non-zero if process is alive, zero if process is zombie. */   
         if(pcb->pstate == ZOMBIE)
           info.alive = 0;
         else info.alive = 1;        
-        
+        printf("info.alive: %d\n", info.alive );
         
         info.thread_count = rlist_len(& pcb->ptcb_list); //Current no of threads. 
-        
+	printf("info.thread_count = rlist_len(& pcb->ptcb_list): %d \n", info.thread_count  );        
+
         info.main_task = pcb->main_task;  
+	printf("info.main_task: %s\n", info.main_task); // %s ?
         info.argl = pcb->argl; 
            printf("Ready to fill info->args\n" );
 	
-	strncpy(info.args, & pcb->args, PROCINFO_MAX_ARGS_SIZE);
+	//strncpy(info.args, & pcb->args, PROCINFO_MAX_ARGS_SIZE);
+        for(int i=0; i<PROCINFO_MAX_ARGS_SIZE-1; i++) info.args[i] = 'n';
+	///////
 	info.args[PROCINFO_MAX_ARGS_SIZE-1] = '\0';
-	printf("info.args[PROCINFO_MAX_ARGS_SIZE-1] must be END OF STRING : %c\n", info.args[PROCINFO_MAX_ARGS_SIZE-1] ); 
-	printf("& pipe->args : %d\n", & pcb->args ); 	
-	printf("info.args[0] : %d\n", info.args[0] ); 
-	printf("info.args[0] : %d\n", info.args[1] );     
+	
+	printf("info.args full of 'n': %s\n", info.args );
+	//printf("info.args[PROCINFO_MAX_ARGS_SIZE-1] must be END OF STRING : %c\n", info.args[PROCINFO_MAX_ARGS_SIZE-1] ); 
+	//printf("& pipe->args : %d\n", & pcb->args ); 	
+	//printf("info.args[0] : %d\n", info.args[0] ); 
+	//printf("info.args[0] : %d\n", info.args[1] );     
 	/*for(uint j = 0; j<PROCINFO_MAX_ARGS_SIZE; j++)  {
 		fprintf("Inside for-loop, j = %d\n", j);
 		info->args[j] = pcb->args[j]; /**< @brief The first 
@@ -418,19 +426,39 @@ Fid_t OpenInfo()
 
         } */ 
        
+	//WE HAVE TO TRANSORM THE STRUCT "INFO" INTO A BYTES STRING
+	
+	/*unsigned char raw[200];
+	printf("Right before the first memcopy, sizeof(info.pid) = %d\n", sizeof(info.pid));
+	memcpy(raw, info.pid, sizeof(info.pid));
+	memcpy(raw + sizeof(info.pid), info.ppid, sizeof(info.ppid));
+	memcpy(raw + sizeof(info.pid) + sizeof(info.ppid), info.alive, sizeof(info.alive));
+	memcpy(raw + sizeof(info.pid) + sizeof(info.ppid) + sizeof(info.alive), info.thread_count, sizeof(info.thread_count));
+	memcpy(raw + sizeof(info.pid) + sizeof(info.ppid) + sizeof(info.alive) + sizeof(info.thread_count), info.main_task, sizeof(info.main_task));
+	memcpy(raw + sizeof(info.pid) + sizeof(info.ppid) + sizeof(info.alive) + sizeof(info.thread_count) + sizeof(info.main_task), info.argl, sizeof(info.argl));
+	memcpy(raw + sizeof(info.pid) + sizeof(info.ppid) + sizeof(info.alive) + sizeof(info.thread_count) + sizeof(info.main_task) + sizeof(info.argl), info.args, sizeof(info.args)); */
+	
+	char raw[sizeof(procinfo)];
 
+	memcpy(raw, &info, sizeof info);
+	printf("size of info = %d, size of raw = %d\n", sizeof info, sizeof raw);
         /*
           write procinfo to buffer
         */
-		printf("Ready to write procinfo in the pipe\n" );
-	
-          Write(pipe.write, &info , sizeof(info));
+		
+          Write(pipe.write, (char*)&raw, sizeof(raw));
 
       }
     	//printf("Ready to load procinfo number %d from PT[]\n", i );	  
     }
 	printf("Ready to close pipe.write = %d \n", pipe.write );
     Close(pipe.write);
+	
+	/*//TESTING WHAT Read() CAN SEE HERE
+	printf("TEST READ IN OpenInfo()\n");
+	char raw[sizeof(procinfo)];
+	Read(pipe.read, (char*)&raw, sizeof(raw)); */ //SUCCEEDED
+
 	printf("Ready to return pipe.read = %d \n", pipe.read );
     return pipe.read;
 
