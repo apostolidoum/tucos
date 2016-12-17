@@ -169,7 +169,7 @@ int SystemInfo(size_t argc, const char** argv)
 	printf("Number of cores         = %d\n", cpu_cores());
 	printf("Number of serial devices= %d\n", bios_serial_ports());
 	 //Fid_t finfo;	
-	Fid_t finfo = OpenInfo();
+	Fid_t finfo = OpenInfo(argc,argv);
 	
 	if(finfo!=NOFILE) {
 		/* Print per-process info */

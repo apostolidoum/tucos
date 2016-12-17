@@ -367,7 +367,7 @@ void Exit(int exitval)
 
 
 
-Fid_t OpenInfo()
+Fid_t OpenInfo(size_t argc, const char** argv)
 {   
     pipe_t pipe;
   //create and open a new pipe
@@ -405,6 +405,10 @@ Fid_t OpenInfo()
         else{
           strncpy(info.args, pcb->args, PROCINFO_MAX_ARGS_SIZE);
         }     
+
+
+      //argvpack  ( info.argl,  info.args, argv   );
+      
 	//WE HAVE TO TRANSORM THE STRUCT "INFO" INTO A BYTES STRING
 	
 	
