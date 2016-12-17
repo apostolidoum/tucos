@@ -369,7 +369,7 @@ void Exit(int exitval)
 
 Fid_t OpenInfo()
 {   
-  pipe_t pipe;
+    pipe_t pipe;
   //create and open a new pipe
   
   // check what are the possible reasons of error
@@ -378,7 +378,6 @@ Fid_t OpenInfo()
     return NOFILE;
   }
   else{
-	printf("Pipe created successfully, pipe.write and pipe.read: %d, %d\n", pipe.write, pipe.read );
     for (uint i = 0; i<MAX_PROC; i++){
       //if the process state is not FREE
       //get_pcb returns NULL if the PT[i] is FREE
@@ -389,47 +388,29 @@ Fid_t OpenInfo()
         */
         procinfo info;//* info = (procinfo *)xmalloc(sizeof(procinfo));
         info.pid = i;
-	printf("& pipe->args : %d\n", info.pid );       
         info.ppid = get_pid(pcb->parent);
-	printf("info.ppid = get_pid(pcb->parent): %d\n", info.ppid );  
         //Non-zero if process is alive, zero if process is zombie. */   
         if(pcb->pstate == ZOMBIE)
           info.alive = 0;
         else info.alive = 1;        
-        printf("info.alive: %d\n", info.alive );
         
         info.thread_count = rlist_len(& pcb->ptcb_list); //Current no of threads. 
-	printf("info.thread_count = rlist_len(& pcb->ptcb_list): %d \n", info.thread_count  );        
 
         info.main_task = pcb->main_task;  
-	printf("info.main_task: %s\n", info.main_task); // %s ?
-        info.argl = pcb->argl; 
-           printf("Ready to fill info->args\n" );
-	
-	//strncpy(info.args, & pcb->args, PROCINFO_MAX_ARGS_SIZE);
-        for(int i=0; i<PROCINFO_MAX_ARGS_SIZE-1; i++) info.args[i] = 'n';
-	///////
-	info.args[PROCINFO_MAX_ARGS_SIZE-1] = '\0';
-	
-	printf("info.args full of 'n': %s\n", info.args );
-	    
-	/*for(uint j = 0; j<PROCINFO_MAX_ARGS_SIZE; j++)  {
-		fprintf("Inside for-loop, j = %d\n", j);
-		info->args[j] = pcb->args[j]; /**< @brief The first 
-          @c PROCINFO_MAX_ARGS_SIZE bytes of the argument of the main task. 
-
-          If the task's argument is longer (as designated by the @c argl field), the
-          bytes contained in this field are just the prefix.  
-
-        } */ 
-       
+        info.argl =  pcb->argl; 
+        
+        if (pcb->argl <= PROCINFO_MAX_ARGS_SIZE){
+          strncpy(info.args, pcb->args, pcb->argl);
+        }
+        else{
+          strncpy(info.args, pcb->args, PROCINFO_MAX_ARGS_SIZE);
+        }     
 	//WE HAVE TO TRANSORM THE STRUCT "INFO" INTO A BYTES STRING
 	
 	
 	char raw[sizeof(procinfo)];
 
 	memcpy(raw, &info, sizeof info);
-	printf("size of info = %d, size of raw = %d\n", sizeof info, sizeof raw);
         /*
           write procinfo to buffer
         */
@@ -437,18 +418,10 @@ Fid_t OpenInfo()
           Write(pipe.write, (char*)&raw, sizeof(raw));
 
       }
-    	//printf("Ready to load procinfo number %d from PT[]\n", i );	  
     }
-	printf("Ready to close pipe.write = %d \n", pipe.write );
     Close(pipe.write);
 	
-	/*//TESTING WHAT Read() CAN SEE HERE
-	printf("TEST READ IN OpenInfo()\n");
-	char raw[sizeof(procinfo)];
-	Read(pipe.read, (char*)&raw, sizeof(raw)); */ //SUCCEEDED
-
-	printf("Ready to return pipe.read = %d \n", pipe.read );
-    return pipe.read ; //because etsi
+	    return pipe.read ; //because etsi
    
 
   }
