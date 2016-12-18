@@ -989,8 +989,6 @@ int data_consumer(int argl, void* args)
 		assert(rc>=0);
 		count += rc;
 	}
-	fprintf(stderr, "%s %d\n", "nbytes is",nbytes );
-	fprintf(stderr, "%s %d\n","read instead ", count);
 	ASSERT(count == nbytes);
 	return 0;
 }
@@ -2047,6 +2045,7 @@ int main(int argc, char** argv)
 	register_test(&all_tests);
 	register_test(&user_tests);
 	register_test(&pipe_tests);
+	register_test(&socket_tests);
 	int return_value = run_program(argc, argv, &all_tests);
 	fprintf(stderr, "%s\n", "		 _____________________________________________" );
 	fprintf(stderr, "%s\n", "		|~~~~~~~~~~MESSAGE FROM OUTER SPACE~~~~~~~~~~~|" );

@@ -7,6 +7,8 @@
 
 #include "ringbuf.h"
 //#include "ringbuf.c"
+#include "util.h"
+
 
 /**
   @file tinyos.h
@@ -507,6 +509,7 @@ int Dup2(Fid_t oldfd, Fid_t newfd);
     PIPE_ALIVE    /**< Means that, pipe has already been created */
   } Pipe_Existance;
 #define PIPE_NULL_FID -1 
+
 typedef struct pipe_s{
   //uint devno;
   Mutex spinlock;
@@ -558,13 +561,74 @@ int pipe_dont_read(void* dev, const char* buf, unsigned int size);
  * Sockets (local)
  *
  *******************************************/
+ /**
+  @brief A type for socket ports.
 
-/**
-	@brief A type for socket ports.
-
-	A socket port is an integer between 1 and @c MAX_PORT.
+  A socket port is an integer between 1 and @c MAX_PORT.
 */
 typedef int16_t port_t;
+
+ /**
+  @brief  socket types
+*/ 
+  typedef enum socket_type{
+    UNBOUND,
+    LISTENER,
+    PEER
+  }socket_type;
+  /**
+  @brief A request of a socket to a listener
+  */
+  typedef struct Request{
+    Fid_t requesting_peer;/**< the fid of the socket that requests from the server to be connected*/    
+
+  }Request;
+
+  typedef enum connection_status{
+    INITIAL,
+    UNSUCCESSFUL,
+    SUCCESSFUL
+  }connection_status;
+
+  typedef enum init_status{
+    UNINITIALIZED,
+    INITIALIZED
+ }init_status;
+
+  typedef struct listener_parameters
+  {
+    /*LISTENER'S STUFF*/
+      rlnode request_list;   /**< The list of requests that the listener aka Server has to serve*/
+      CondVar incoming_request;    /**< cond var for listener to sleep on when the request list is empty*/
+      port_t port;
+      init_status init_status;
+    
+  } listener_param;
+  typedef struct peer_parameters
+  {
+     /* PEER'S STUFF*/
+      Fid_t sender;
+      Fid_t receiver;
+      Request request;
+      CondVar wait_to_be_served; /**< cond var for peer to sleep on when waiting for the listener to respond */
+      connection_status conection_status;   
+  }peer_param;
+
+/**
+  @brief A socket object.
+*/ 
+  typedef struct socket_control_block{
+    socket_type type;
+    Fid_t fid; //socket's(struct) fid 
+    Mutex socket_spinlock;
+    union type_parameters{
+     listener_param listener_param;
+     peer_param peer_param;     
+    }type_parameters;
+
+  }socket_cb;
+
+
 
 /**
 	@brief the maximum legal port 
@@ -575,6 +639,7 @@ typedef int16_t port_t;
 	@brief a null value for a port
 */
 #define NOPORT ((port_t)0)
+#define SOCKET_NULL_FID -1 
 
 
 /**
@@ -722,6 +787,10 @@ typedef enum {
 */
 int ShutDown(Fid_t sock, shutdown_mode how);
 
+int socket_read(void * dev, char* buf, unsigned int size);
+
+int socket_write(void * dev, char* buf, unsigned int size);
+int socket_close(void* dev);
 
 
 /*******************************************
